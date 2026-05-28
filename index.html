@@ -534,7 +534,7 @@
         .percent-badge { font-size: 18px; font-weight: 800; color: var(--theme-color); margin-top: -5px; display: none; }
     </style>
 </head>
-<body onload="verifyLicenseGateKey()">
+<body onload="initializeAppCore()">
 
 <div id="dbLoaderComponent" class="db-loader-backdrop">
     <div class="db-loader-card">
@@ -665,7 +665,6 @@
 </div>
 
 <script>
-    const MASTER_SECURITY_KEY = "ADZKIYA-CARE-2026";
     let currentThemeHex = "#FF5A79";
     let isAdminMode = false;
     
@@ -712,24 +711,6 @@
     let selectedServices = [];
     let base64LogoDataStream = ""; 
     let notifiedReservations = {};
-
-    function verifyLicenseGateKey() {
-        const isVerified = localStorage.getItem("adzkiya_app_licensed");
-        if (isVerified === "true") {
-            initializeAppCore();
-            return;
-        }
-        
-        const userInputKey = prompt("🔒 APLIKASI TERKUNCI\n\nSilakan masukkan Kunci Lisensi Keamanan (License Key) untuk mengaktifkan sistem database:");
-        if (userInputKey === MASTER_SECURITY_KEY) {
-            localStorage.setItem("adzkiya_app_licensed", "true");
-            alert("✓ Lisensi Berhasil Diverifikasi! Membuka database...");
-            initializeAppCore();
-        } else {
-            alert("✕ Kunci salah atau tidak valid! Aplikasi tidak dapat dimuat.");
-            document.body.innerHTML = `<div style="text-align:center; padding:50px; font-weight:bold; color:#ef4444;">AKSES DITOLAK: Lisensi tidak valid atau belum diaktifkan.</div>`;
-        }
-    }
 
     function animatePercentageCounter(start, end, duration, onUpdate, onComplete) {
         const startTime = performance.now();
