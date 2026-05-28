@@ -1,0 +1,1956 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>Adzkiya Mom Baby Care - Advanced Ledger & Reservation Edition</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.25/jspdf.plugin.autotable.min.js"></script>
+    <style>
+        /* --- Clean & Crisp UI Theme --- */
+        * { 
+            box-sizing: border-box; 
+            font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", "Segoe UI", Roboto, sans-serif; 
+            margin: 0; 
+            padding: 0; 
+            -webkit-tap-highlight-color: transparent; 
+        }
+        
+        :root {
+            --theme-color: #FF5A79; 
+            --theme-glow: rgba(255, 90, 121, 0.2);
+            --bg-gradient: linear-gradient(135deg, #090615 0%, #0f0b21 40%, #1a0816 80%, #0b081d 100%);
+            --card-bg: rgba(20, 16, 36, 0.8); 
+            --card-border: rgba(255, 255, 255, 0.12);
+            --text-main: #FFFFFF; 
+            --text-sub: #E2E8F0;  
+            --input-bg: rgba(255, 255, 255, 0.06);
+            --input-border: rgba(255, 255, 255, 0.2); 
+            --item-hover: rgba(255, 255, 255, 0.1);
+            --item-border: rgba(255, 255, 255, 0.12);
+            --shadow-fluid: 0 30px 60px rgba(0, 0, 0, 0.5), inset 0 1px 1px rgba(255, 255, 255, 0.1);
+            --tab-bg: rgba(255, 255, 255, 0.05);
+            --watermark-opacity: 0.04;
+        }
+
+        body.light-mode {
+            --bg-gradient: linear-gradient(135deg, #e6edf5 0%, #d5e0eb 40%, #fbcfe8 80%, #e2e8f0 100%);
+            --card-bg: rgba(255, 255, 255, 0.85); 
+            --card-border: rgba(0, 0, 0, 0.12);
+            --text-main: #111827; 
+            --text-sub: #374151;  
+            --input-bg: rgba(0, 0, 0, 0.04);
+            --input-border: rgba(0, 0, 0, 0.15); 
+            --item-hover: rgba(0, 0, 0, 0.04);
+            --item-border: rgba(0, 0, 0, 0.06);
+            --shadow-fluid: 0 30px 60px rgba(15, 23, 42, 0.08), inset 0 1px 1px rgba(255, 255, 255, 0.8);
+            --tab-bg: rgba(0, 0, 0, 0.04);
+            --watermark-opacity: 0.07;
+        }
+
+        body { 
+            background: var(--bg-gradient); 
+            min-height: 100vh;
+            padding: 40px 20px; 
+            color: var(--text-main);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: flex-start;
+            gap: 25px;
+            transition: background 0.5s ease;
+        }
+
+        .container, .recap-container, .reservation-container { 
+            position: relative; 
+            background: var(--card-bg); 
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid var(--card-border);
+            border-radius: 24px; 
+            padding: 30px 24px; 
+            box-shadow: var(--shadow-fluid);
+            width: 100%;
+            max-width: 440px; 
+            transition: background 0.4s ease, border 0.4s ease;
+        }
+
+        .admin-only { display: none !important; }
+        body.admin-mode .admin-only { display: block !important; }
+
+        .ui-watermark {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 260px; 
+            height: 260px;
+            object-fit: contain;
+            opacity: var(--watermark-opacity);
+            pointer-events: none; 
+            z-index: 0;
+        }
+
+        .brand-section, .color-palette, .form-group, .live-total-panel, .btn-block, .recap-content, .reservation-content {
+            position: relative;
+            z-index: 1;
+        }
+
+        .brand-section {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 20px;
+            gap: 10px;
+        }
+
+        .brand-title-area {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .ui-header-logo {
+            width: 42px;
+            height: 42px;
+            object-fit: cover;
+            border-radius: 10px;
+            border: 1px solid var(--card-border);
+            background: rgba(255, 255, 255, 0.1);
+        }
+
+        h2 { 
+            font-size: 18px; 
+            font-weight: 800; 
+            letter-spacing: -0.5px;
+            line-height: 1.2;
+        }
+        h2 .accent-part { color: var(--theme-color); display: block; }
+        h2 .neutral-part { color: var(--text-main); font-weight: 700; font-size: 15px; }
+
+        .header-actions {
+            display: flex;
+            gap: 6px;
+            flex-shrink: 0;
+        }
+
+        .mode-toggle, .role-toggle {
+            background: var(--input-bg);
+            border: 1px solid var(--card-border);
+            color: var(--text-main);
+            cursor: pointer;
+            font-size: 13px;
+            padding: 0 10px;
+            height: 38px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s ease;
+            font-weight: bold;
+        }
+        .mode-toggle:hover, .role-toggle:hover { transform: scale(1.05); }
+        .role-toggle.admin-active {
+            background: var(--theme-color);
+            color: white;
+            border-color: transparent;
+        }
+
+        .color-palette {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 20px;
+            background: var(--input-bg);
+            padding: 5px;
+            border-radius: 14px;
+            border: 1px solid var(--input-border);
+        }
+        .color-dot {
+            width: 24px;
+            height: 24px;
+            border-radius: 10px;
+            cursor: pointer;
+            border: 2px solid transparent;
+            transition: all 0.2s ease;
+        }
+        .color-dot.active { border-color: var(--text-main); box-shadow: 0 0 8px var(--theme-glow); }
+
+        .form-group { margin-bottom: 16px; }
+        .form-group label { 
+            display: block; 
+            margin-bottom: 6px; 
+            font-weight: 700; 
+            font-size: 12px; 
+            color: var(--text-sub); 
+            letter-spacing: 0.3px;
+        }
+        
+        input[type="text"], input[type="tel"], input[type="number"], input[type="file"], input[type="datetime-local"] { 
+            width: 100%; 
+            padding: 12px 14px; 
+            background: var(--input-bg);
+            border: 1px solid var(--input-border); 
+            border-radius: 12px; 
+            font-size: 14px; 
+            font-weight: 600; 
+            color: var(--text-main);
+            outline: none; 
+            transition: all 0.3s ease;
+        }
+        input[type="datetime-local"] { color-scheme: dark; }
+        body.light-mode input[type="datetime-local"] { color-scheme: light; }
+        input[type="file"] { padding: 9px; font-size: 12px; cursor: pointer; }
+        input:focus { 
+            border-color: var(--theme-color); 
+            box-shadow: 0 0 0 3px var(--theme-glow);
+        }
+
+        .category-tabs {
+            display: flex;
+            background: var(--tab-bg);
+            padding: 4px;
+            border-radius: 12px;
+            border: 1px solid var(--input-border);
+            margin-bottom: 10px;
+            overflow-x: auto;
+            gap: 4px;
+        }
+        .category-tabs::-webkit-scrollbar { display: none; }
+        
+        .tab-btn {
+            flex: 0 0 auto;
+            background: transparent;
+            border: none;
+            color: var(--text-sub);
+            padding: 8px 14px;
+            font-size: 11px;
+            font-weight: 700; 
+            border-radius: 9px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+        .tab-btn.active { background: var(--text-main); color: #110e20; }
+        body.light-mode .tab-btn.active { background: #111827; color: #FFFFFF; }
+
+        .scroll-wrapper { position: relative; width: 100%; }
+        .service-list { 
+            max-height: 180px; 
+            overflow-y: auto; 
+            background: var(--input-bg);
+            border: 1px solid var(--input-border);
+            border-radius: 14px; 
+            padding: 4px 0;
+            padding-right: 40px; 
+        }
+        .service-list::-webkit-scrollbar { display: none; } 
+        .menu-pane { display: none; }
+        .menu-pane.active { display: block; }
+
+        .scroll-navigation-panel {
+            position: absolute;
+            right: 10px;
+            top: 50%;
+            transform: translateY(-50%);
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+            z-index: 10;
+        }
+        .scroll-btn {
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid var(--input-border);
+            color: var(--text-main);
+            width: 26px;
+            height: 26px;
+            border-radius: 8px;
+            font-size: 10px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .scroll-btn:hover { background: var(--theme-color); color: white; }
+
+        .service-item { 
+            display: flex; 
+            align-items: center; 
+            padding: 11px 14px; 
+            border-bottom: 1px solid var(--item-border); 
+            cursor: pointer;
+            width: 100%;
+        }
+        .service-item:hover { background: var(--item-hover); }
+        .service-item.selected { background: rgba(255, 255, 255, 0.12); }
+        body.light-mode .service-item.selected { background: rgba(0, 0, 0, 0.05); }
+        .service-item:last-child { border-bottom: none; }
+        
+        input[type="checkbox"] { 
+            width: 18px; 
+            height: 18px; 
+            margin-right: 12px; 
+            accent-color: var(--theme-color); 
+            cursor: pointer;
+            flex-shrink: 0;
+        }
+        .service-item span { 
+            font-size: 13px; 
+            font-weight: 600; 
+            color: var(--text-main); 
+        }
+
+        .live-total-panel {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin: 18px 0 15px 0;
+            padding: 0 2px;
+        }
+        .live-total-label { font-size: 11px; color: var(--text-sub); text-transform: uppercase; font-weight: 700; }
+        .live-total-value { font-size: 22px; font-weight: 800; color: var(--text-main); }
+
+        button.btn-block { 
+            width: 100%; 
+            background: linear-gradient(180deg, var(--theme-color) 0%, rgba(244, 63, 94, 1) 100%);
+            color: white; 
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            padding: 14px; 
+            font-size: 15px; 
+            font-weight: 700; 
+            border-radius: 14px; 
+            cursor: pointer; 
+            box-shadow: 0 10px 20px var(--theme-glow);
+            margin-bottom: 10px;
+            transition: all 0.2s ease;
+        }
+        button.btn-block:hover { transform: translateY(-1px); opacity: 0.95; }
+        button.btn-block:active { transform: scale(0.99); }
+        
+        button.btn-secondary {
+            background: var(--input-bg);
+            color: var(--text-main);
+            border: 1px solid var(--input-border);
+            box-shadow: none;
+        }
+        button.btn-secondary:hover { background: var(--item-hover); }
+
+        .recap-header, .reservation-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+        .recap-header h3, .reservation-header h3 { font-size: 15px; font-weight: 800; }
+        .recap-action-buttons { display: flex; gap: 6px; flex-wrap: wrap; }
+
+        .income-summary-panel {
+            background: var(--input-bg);
+            border: 1px dashed var(--theme-color);
+            border-radius: 14px;
+            padding: 12px 14px;
+            margin-bottom: 15px;
+        }
+        .income-panel-title {
+            font-size: 11px;
+            text-transform: uppercase;
+            font-weight: 700;
+            color: var(--text-sub);
+            margin-bottom: 8px;
+            letter-spacing: 0.5px;
+        }
+        .income-row {
+            display: flex;
+            justify-content: space-between;
+            font-size: 12px;
+            font-weight: 600;
+            padding: 4px 0;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+        }
+        body.light-mode .income-row { border-bottom: 1px solid rgba(0, 0, 0, 0.05); }
+        .income-row:last-child { border-bottom: none; }
+        .income-row .month-lbl { color: var(--text-main); }
+        .income-row .amount-val { color: var(--theme-color); font-weight: 800; }
+
+        .recap-list, .reservation-list {
+            max-height: 280px;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            margin-top: 10px;
+            padding-right: 2px;
+        }
+        .recap-list::-webkit-scrollbar, .reservation-list::-webkit-scrollbar { width: 4px; }
+        .recap-list::-webkit-scrollbar-thumb, .reservation-list::-webkit-scrollbar-thumb { background: var(--input-border); border-radius: 4px; }
+        
+        .month-group-title {
+            font-size: 12px;
+            font-weight: 800;
+            color: var(--theme-color);
+            background: rgba(255, 90, 121, 0.1);
+            padding: 6px 12px;
+            border-radius: 8px;
+            letter-spacing: 0.5px;
+            margin-top: 6px;
+            display: flex;
+            justify-content: space-between;
+            border-left: 3px solid var(--theme-color);
+        }
+        body.light-mode .month-group-title { background: rgba(0, 0, 0, 0.05); }
+
+        .recap-item, .reservation-item {
+            background: var(--input-bg);
+            border: 1px solid var(--item-border);
+            padding: 12px;
+            border-radius: 12px;
+            font-size: 12px;
+            position: relative;
+            margin-left: 4px;
+        }
+        .recap-item .name, .reservation-item .name { font-weight: 700; color: var(--text-main); margin-bottom: 3px; }
+        .recap-item .details, .reservation-item .details { color: var(--text-sub); opacity: 0.85; font-size: 11px; margin-bottom: 2px; }
+        .recap-item .price, .reservation-item .price { font-weight: 800; color: var(--theme-color); text-align: right; margin-top: 4px; font-size: 13px; }
+        
+        .btn-item-action {
+            position: absolute;
+            top: 10px;
+            background: transparent;
+            border: none;
+            font-size: 11px;
+            cursor: pointer;
+            font-weight: bold;
+        }
+        .btn-delete { right: 12px; color: #f43f5e; }
+        .btn-reprint { right: 34px; color: #3b82f6; }
+
+        .reservation-actions-panel {
+            display: flex;
+            gap: 8px;
+            margin-top: 8px;
+            justify-content: flex-end;
+            align-items: center;
+        }
+        .btn-acc { background: #10b981; color: white; border: none; padding: 4px 10px; border-radius: 6px; font-weight: bold; cursor: pointer; font-size: 11px; }
+        .btn-reject { background: #ef4444; color: white; border: none; padding: 4px 10px; border-radius: 6px; font-weight: bold; cursor: pointer; font-size: 11px; }
+        .btn-print-wait { background: #eab308; color: white; border: none; padding: 4px 8px; border-radius: 6px; font-weight: bold; cursor: pointer; font-size: 11px; }
+
+        .security-section {
+            border-top: 1px dashed var(--input-border);
+            margin-top: 12px;
+            padding-top: 12px;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            justify-content: space-between;
+        }
+        .security-btn {
+            width: 48%;
+            background: var(--input-bg);
+            border: 1px solid var(--input-border);
+            color: var(--text-main);
+            padding: 8px;
+            border-radius: 8px;
+            font-size: 11px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+        .security-btn:hover { background: var(--theme-color); color: white; border-color: transparent; }
+        .hidden-file-input { display: none; }
+
+        .toast-notification {
+            position: fixed;
+            bottom: 24px;
+            right: 24px;
+            background: #1e1b4b;
+            color: #ffffff;
+            border-left: 5px solid #ef4444;
+            padding: 16px 20px;
+            border-radius: 12px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+            z-index: 99999;
+            max-width: 320px;
+            font-size: 13px;
+            animation: slideInUp 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+        body.light-mode .toast-notification { background: #ffffff; color: #1e293b; box-shadow: 0 10px 30px rgba(0,0,0,0.15); }
+        .toast-title { font-weight: 800; color: #ef4444; margin-bottom: 4px; display: flex; align-items: center; gap: 6px; }
+        .toast-close { position: absolute; top: 8px; right: 10px; background: transparent; border: none; color: var(--text-sub); cursor: pointer; font-size: 14px; font-weight: bold; }
+
+        @keyframes slideInUp {
+            from { transform: translateY(100px); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
+
+        /* --- Loader Backdrop Styles --- */
+        .db-loader-backdrop {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(11, 8, 29, 0.85);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            display: flex; align-items: center; justify-content: center;
+            z-index: 999999; opacity: 0; pointer-events: none;
+            transition: opacity 0.3s ease;
+        }
+        body.light-mode .db-loader-backdrop { background: rgba(241, 245, 249, 0.85); }
+        .db-loader-backdrop.active { opacity: 1; pointer-events: auto; }
+        .db-loader-card {
+            background: var(--card-bg);
+            border: 1px solid var(--card-border);
+            padding: 30px 40px; border-radius: 20px;
+            box-shadow: var(--shadow-fluid);
+            display: flex; flex-direction: column; align-items: center; gap: 15px;
+            text-align: center; max-width: 320px; width: 90%;
+        }
+        .db-loader-spinner {
+            width: 50px; height: 50px;
+            border: 4px solid var(--input-border);
+            border-top-color: var(--theme-color);
+            border-radius: 50%;
+            animation: dbSpin 0.8s linear infinite;
+        }
+        .db-loader-status-icon { display: none; font-size: 40px; line-height: 1; }
+        .db-loader-text { font-size: 14px; font-weight: 700; color: var(--text-main); }
+        .db-loader-subtext { font-size: 11px; font-weight: 500; color: var(--text-sub); opacity: 0.7; }
+        @keyframes dbSpin { to { transform: rotate(360deg); } }
+
+        .progress-bar-container {
+            width: 100%;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+            height: 8px;
+            overflow: hidden;
+            margin-top: 5px;
+            display: none;
+        }
+        body.light-mode .progress-bar-container { background: rgba(0, 0, 0, 0.1); }
+        .progress-bar-fill {
+            height: 100%;
+            width: 0%;
+            background: var(--theme-color);
+            border-radius: 10px;
+            transition: width 0.1s linear;
+        }
+        .percent-badge { font-size: 18px; font-weight: 800; color: var(--theme-color); margin-top: -5px; display: none; }
+    </style>
+</head>
+<body onload="verifyLicenseGateKey()">
+
+<div id="dbLoaderComponent" class="db-loader-backdrop">
+    <div class="db-loader-card">
+        <div id="dbLoaderSpinner" class="db-loader-spinner"></div>
+        <div id="dbLoaderIcon" class="db-loader-status-icon"></div>
+        <div id="dbPercentBadge" class="percent-badge">0%</div>
+        <div class="progress-bar-container" id="progressBarContainer">
+            <div class="progress-bar-fill" id="progressBarFill"></div>
+        </div>
+        <div id="dbLoaderText" class="db-loader-text">Sinkronisasi Data...</div>
+        <div id="dbLoaderSubtext" class="db-loader-subtext">Mohon jangan menutup aplikasi</div>
+    </div>
+</div>
+
+<div class="container">
+    <img class="ui-watermark" id="uiWatermarkView" src="" alt="" style="display: none;">
+
+    <div class="brand-section">
+        <div class="brand-title-area">
+            <img class="ui-header-logo" id="uiHeaderLogoView" src="data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%23FF5A79'><path d='M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15.5h-2v-2h2v2zm0-4.5h-2V7h2v6z'/></svg>" alt="Logo">
+            <h2><span class="accent-part">Adzkiya</span><span class="neutral-part">Mom Baby Care</span></h2>
+        </div>
+        <div class="header-actions">
+            <button class="role-toggle" id="roleToggleBtn" onclick="toggleUserRoleMode()">👤 Pasien</button>
+            <button class="mode-toggle" onclick="toggleUIVisualMode()">🌓</button>
+        </div>
+    </div>
+
+    <div class="color-palette">
+        <div class="color-dot active" style="background: #FF5A79;" onclick="changeUITheme('#FF5A79', 'rgba(255, 90, 121, 0.2)', this)"></div>
+        <div class="color-dot" style="background: #2DD4BF;" onclick="changeUITheme('#2DD4BF', 'rgba(45, 212, 191, 0.2)', this)"></div>
+        <div class="color-dot" style="background: #3B82F6;" onclick="changeUITheme('#3B82F6', 'rgba(59, 130, 246, 0.2)', this)"></div>
+        <div class="color-dot" style="background: #A855F7;" onclick="changeUITheme('#A855F7', 'rgba(168, 85, 247, 0.2)', this)"></div>
+        <div class="color-dot" style="background: #F59E0B;" onclick="changeUITheme('#F59E0B', 'rgba(245, 158, 11, 0.2)', this)"></div>
+    </div>
+
+    <div class="form-group admin-only">
+        <label>Upload Logo Klinik / Praktik</label>
+        <input type="file" id="logoUploader" accept="image/png, image/jpeg, image/jpg" onchange="processLogoImageFile(this)">
+    </div>
+
+    <div class="form-group">
+        <label>Nama Pelanggan / Pasien</label>
+        <input type="text" id="namaPasien" placeholder="Masukkan nama lengkap">
+    </div>
+
+    <div class="form-group">
+        <label>Nomor HP / WhatsApp</label>
+        <input type="tel" id="nomorHp" placeholder="Contoh: 081234567xxx">
+    </div>
+
+    <div class="form-group">
+        <label>Alamat Lengkap Pasien</label>
+        <input type="text" id="alamatPasien" placeholder="Contoh: RT 02 RW 04, Desa Klumprit">
+    </div>
+
+    <div class="form-group">
+        <label>Waktu & Jam Reservasi Treatment</label>
+        <input type="datetime-local" id="waktuReservasi">
+    </div>
+
+    <div class="form-group admin-only">
+        <label>Potongan Diskon (Rp)</label>
+        <input type="number" id="diskonHarga" placeholder="0" value="0" oninput="calculateLiveTotalBill()">
+    </div>
+
+    <div class="form-group">
+        <label>Kategori & Layanan Treatment</label>
+        <div class="category-tabs" id="categoryTabsLayout"></div>
+        
+        <div class="scroll-wrapper">
+            <div class="service-list" id="serviceContainer"></div>
+            <div class="scroll-navigation-panel">
+                <button class="scroll-btn" onclick="scrollServiceList('up')">▲</button>
+                <button class="scroll-btn" onclick="scrollServiceList('down')">▼</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="live-total-panel">
+        <span class="live-total-label">Total Pembayaran</span>
+        <span class="live-total-value" id="liveTotalDisplay">Rp 0</span>
+    </div>
+
+    <button class="btn-block" id="btnKirimReservasi" onclick="sendReservationRequest()">Kirim Reservasi Treatment</button>
+    
+    <button class="btn-block admin-only" onclick="generatePremiumInvoicePDF()">Cetak PDF Kwitansi</button>
+    <button class="btn-block btn-secondary admin-only" onclick="saveCustomerToRecapDirect()">Simpan Langsung ke Rekapan</button>
+</div>
+
+<div class="reservation-container admin-only">
+    <div class="reservation-content">
+        <div class="reservation-header">
+            <h3>⏳ Daftar Tunggu Reservasi</h3>
+        </div>
+        <div class="reservation-list" id="reservationListContainer"></div>
+    </div>
+</div>
+
+<div class="recap-container admin-only">
+    <div class="recap-content">
+        <div class="recap-header">
+            <h3>📋 Rekapan Data Pelanggan (ACC)</h3>
+            <div class="recap-action-buttons">
+                <button class="scroll-btn" style="width: auto; padding: 4px 12px; background: #10b981; border: none; color: white; font-weight: bold; font-size: 11px; border-radius: 8px;" onclick="exportRecapToExcelXML()">Cetak Excel</button>
+            </div>
+        </div>
+
+        <div class="income-summary-panel">
+            <div class="income-panel-title">💰 Total Penghasilan Per Bulan</div>
+            <div id="incomeRowsContainer"></div>
+        </div>
+        
+        <div class="recap-list" id="recapListContainer"></div>
+
+        <div class="security-section">
+            <button class="security-btn" style="background: #2563eb; color: white;" onclick="backupDatabaseToJSON()">💾 Backup Offline</button>
+            <button class="security-btn" style="background: #7c3aed; color: white;" onclick="triggerImportFileInput()">📂 Restore Offline</button>
+            <button class="security-btn" style="background: #16a34a; color: white; width: 48%;" onclick="cloudGoogleDriveSync('backup')">🌐 Backup Drive</button>
+            <button class="security-btn" style="background: #ea580c; color: white; width: 48%;" onclick="cloudGoogleDriveSync('restore')">🔄 Restore Drive</button>
+            
+            <input type="file" id="importFileSource" class="hidden-file-input" accept=".json" onchange="importDatabaseFromJSON(this)">
+        </div>
+        <div style="text-align: right; margin-top: 8px;">
+            <button class="scroll-btn" style="width: auto; padding: 2px 8px; display: inline-block;" onclick="clearAllRecapRecords()">Hapus Semua Riwayat</button>
+        </div>
+    </div>
+</div>
+
+<script>
+    const MASTER_SECURITY_KEY = "ADZKIYA-CARE-2026";
+    let currentThemeHex = "#FF5A79";
+    let isAdminMode = false;
+    
+    const ADMIN_PASSWORD = "Adzkiya2025";
+    const GOOGLE_APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbylnnFsU475r9NJHN-JzkYry54K-JhKAzshRVc2u-2SC8uL2JRVO-sKuszdugAP-KUpVw/exec";
+
+    const medicalServicesDataset = {
+        "IBU": [
+            { name: "Massage Ibu Hamil", price: 80000 },
+            { name: "Massage Ibu Nifas", price: 80000 },
+            { name: "Massage Laktasi", price: 80000 },
+            { name: "Massage Induksi", price: 80000 },
+            { name: "Harmony Spa", price: 105000 },
+            { name: "Blooming Spa", price: 115000 },
+            { name: "Serenity Bump Package", price: 115000 },
+            { name: "Blooming Mama Package", price: 125000 },
+            { name: "Adzkiya Glow Package", price: 135000 },
+            { name: "Perawatan Luka Perineum", price: 100000 },
+            { name: "Perawatan Luka Post Sc", price: 120000 }
+        ],
+        "BAYI 0-12 BULAN": [
+            { name: "Sleepwell Massage", price: 50000 },
+            { name: "Pijat Bapil", price: 60000 },
+            { name: "Pijat Diare", price: 60000 },
+            { name: "Pijat Sembelit", price: 60000 },
+            { name: "Pijat Tuina", price: 60000 },
+            { name: "Therapy Bapil", price: 80000 },
+            { name: "Baby Haircut", price: 25000 },
+            { name: "Newborn Care 3 Days", price: 255000 },
+            { name: "Newborn Care 5 Days", price: 425000 }
+        ],
+        "ANAK (KIDS)": [
+            { name: "Sleepwell Massage (1-3 Th)", price: 50000 },
+            { name: "Sleepwell Massage (4-5 Th)", price: 50000 },
+            { name: "Pijat Bapil (Kids)", price: 60000 },
+            { name: "Therapy Bapil (Kids)", price: 85000 }
+        ],
+        "MOM AND NEW BORN": [
+            { name: "Mom & Newborn Care 5 Days", price: 550000 },
+            { name: "Mom & Newborn Care 7 Days", price: 750000 }
+        ]
+    };
+
+    let selectedServices = [];
+    let base64LogoDataStream = ""; 
+    let notifiedReservations = {};
+
+    function verifyLicenseGateKey() {
+        const isVerified = localStorage.getItem("adzkiya_app_licensed");
+        if (isVerified === "true") {
+            initializeAppCore();
+            return;
+        }
+        
+        const userInputKey = prompt("🔒 APLIKASI TERKUNCI\n\nSilakan masukkan Kunci Lisensi Keamanan (License Key) untuk mengaktifkan sistem database:");
+        if (userInputKey === MASTER_SECURITY_KEY) {
+            localStorage.setItem("adzkiya_app_licensed", "true");
+            alert("✓ Lisensi Berhasil Diverifikasi! Membuka database...");
+            initializeAppCore();
+        } else {
+            alert("✕ Kunci salah atau tidak valid! Aplikasi tidak dapat dimuat.");
+            document.body.innerHTML = `<div style="text-align:center; padding:50px; font-weight:bold; color:#ef4444;">AKSES DITOLAK: Lisensi tidak valid atau belum diaktifkan.</div>`;
+        }
+    }
+
+    function animatePercentageCounter(start, end, duration, onUpdate, onComplete) {
+        const startTime = performance.now();
+        function update(currentTime) {
+            const elapsed = currentTime - startTime;
+            const progress = Math.min(elapsed / duration, 1);
+            const value = Math.floor(start + progress * (end - start));
+            onUpdate(value);
+            if (progress < 1) {
+                requestAnimationFrame(update);
+            } else if (onComplete) {
+                onComplete();
+            }
+        }
+        requestAnimationFrame(update);
+    }
+
+    function hexToRgbComponents(hex) {
+        hex = hex.replace(/^#/, '');
+        if (hex.length === 3) {
+            hex = hex.split('').map(c => c + c).join('');
+        }
+        let bigint = parseInt(hex, 16);
+        return {
+            r: (bigint >> 16) & 255,
+            g: (bigint >> 8) & 255,
+            b: bigint & 255
+        };
+    }
+
+    function showDatabaseAnimationLoader(message, subtext = "Mohon tunggu sebentar...") {
+        document.getElementById('dbLoaderText').innerText = message;
+        document.getElementById('dbLoaderSubtext').innerText = subtext;
+        document.getElementById('dbLoaderSpinner').style.display = "block";
+        document.getElementById('dbLoaderIcon').style.display = "none";
+        
+        document.getElementById('dbPercentBadge').style.display = "block";
+        document.getElementById('dbPercentBadge').innerText = "0%";
+        document.getElementById('progressBarContainer').style.display = "block";
+        document.getElementById('progressBarFill').style.width = "0%";
+        
+        document.getElementById('dbLoaderComponent').classList.add('active');
+    }
+
+    function updateLoaderPercentage(percent) {
+        document.getElementById('dbPercentBadge').innerText = percent + "%";
+        document.getElementById('progressBarFill').style.width = percent + "%";
+    }
+
+    function endDatabaseAnimationLoader(isSuccess, endMessage, onClosedCallback) {
+        document.getElementById('dbLoaderSpinner').style.display = "none";
+        document.getElementById('dbPercentBadge').style.display = "none";
+        document.getElementById('progressBarContainer').style.display = "none";
+        
+        const statusIcon = document.getElementById('dbLoaderIcon');
+        statusIcon.style.display = "block";
+        if (isSuccess) {
+            statusIcon.innerText = "⭐";
+            statusIcon.style.color = "#10b981";
+        } else {
+            statusIcon.innerText = "❌";
+            statusIcon.style.color = "#ef4444";
+        }
+        
+        document.getElementById('dbLoaderText').innerText = endMessage;
+        document.getElementById('dbLoaderSubtext').innerText = "Jendela menutup otomatis...";
+        
+        setTimeout(() => {
+            document.getElementById('dbLoaderComponent').classList.remove('active');
+            if (onClosedCallback) onClosedCallback();
+        }, 1200);
+    }
+
+    function changeUITheme(primaryColor, glowColor, element) {
+        currentThemeHex = primaryColor;
+        document.documentElement.style.setProperty('--theme-color', primaryColor);
+        document.documentElement.style.setProperty('--theme-glow', glowColor);
+        document.querySelectorAll('.color-dot').forEach(d => d.classList.remove('active'));
+        element.classList.add('active');
+    }
+
+    function toggleUIVisualMode() {
+        document.body.classList.toggle('light-mode');
+    }
+
+    function toggleUserRoleMode() {
+        const btn = document.getElementById('roleToggleBtn');
+        const btnKirim = document.getElementById('btnKirimReservasi');
+        
+        if (!isAdminMode) {
+            const inputPassword = prompt("Masukkan password Admin:");
+            if (inputPassword === null) return;
+            if (inputPassword === ADMIN_PASSWORD) {
+                isAdminMode = true;
+                document.body.classList.add('admin-mode');
+                btn.innerText = "🔑 Admin";
+                btn.classList.add('admin-active');
+                btnKirim.style.display = "none";
+                loadReservationRecords();
+                loadRecapRecords();
+                calculateLiveTotalBill();
+            } else {
+                alert("❌ Password salah! Akses ditolak.");
+            }
+        } else {
+            isAdminMode = false;
+            document.body.classList.remove('admin-mode');
+            btn.innerText = "👤 Pasien";
+            btn.classList.remove('admin-active');
+            btnKirim.style.display = "block";
+            document.getElementById('diskonHarga').value = "0";
+            calculateLiveTotalBill();
+        }
+    }
+
+    function initializeAppCore() {
+        const tabsContainer = document.getElementById('categoryTabsLayout');
+        const serviceContainer = document.getElementById('serviceContainer');
+        
+        tabsContainer.innerHTML = "";
+        serviceContainer.innerHTML = "";
+        
+        let isFirst = true;
+        for (const category in medicalServicesDataset) {
+            const categoryId = category.replace(/[^a-zA-Z0-9]/g, '-');
+            
+            const tabBtn = document.createElement('button');
+            tabBtn.className = `tab-btn ${isFirst ? 'active' : ''}`;
+            tabBtn.innerText = category;
+            tabBtn.onclick = () => switchCategoryTab(categoryId, tabBtn);
+            tabsContainer.appendChild(tabBtn);
+            
+            const pane = document.createElement('div');
+            pane.className = `menu-pane ${isFirst ? 'active' : ''}`;
+            pane.id = `pane-${categoryId}`;
+            
+            medicalServicesDataset[category].forEach(srv => {
+                const item = document.createElement('div');
+                item.className = 'service-item';
+                
+                const chk = document.createElement('input');
+                chk.type = 'checkbox';
+                chk.onchange = () => toggleServiceSelection(srv, category, chk, item);
+                
+                const label = document.createElement('span');
+                label.innerText = `${srv.name} (Rp ${srv.price.toLocaleString('id-ID')})`;
+                
+                item.appendChild(chk);
+                item.appendChild(label);
+                item.onclick = (e) => {
+                    if (e.target !== chk) {
+                        chk.checked = !chk.checked;
+                        toggleServiceSelection(srv, category, chk, item);
+                    }
+                };
+                pane.appendChild(item);
+            });
+            
+            serviceContainer.appendChild(pane);
+            isFirst = false;
+        }
+
+        const savedLogo = localStorage.getItem("adzkiya_logo_stream");
+        if (savedLogo) {
+            base64LogoDataStream = savedLogo;
+            const uiWatermark = document.getElementById('uiWatermarkView');
+            uiWatermark.src = base64LogoDataStream;
+            uiWatermark.style.display = "block";
+            
+            const uiHeaderLogo = document.getElementById('uiHeaderLogoView');
+            if (uiHeaderLogo) {
+                uiHeaderLogo.src = base64LogoDataStream;
+            }
+        }
+        
+        loadReservationRecords();
+        loadRecapRecords();
+        
+        if ("Notification" in window && Notification.permission === "default") {
+            Notification.requestPermission();
+        }
+        setInterval(checkUpcomingReservationsEngine, 20000);
+    }
+
+    function switchCategoryTab(categoryId, element) {
+        document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+        document.querySelectorAll('.menu-pane').forEach(p => p.classList.remove('active'));
+        
+        element.classList.add('active');
+        document.getElementById(`pane-${categoryId}`).classList.add('active');
+        document.getElementById('serviceContainer').scrollTop = 0;
+    }
+
+    function scrollServiceList(direction) {
+        const container = document.getElementById('serviceContainer');
+        if (direction === 'up') {
+            container.scrollBy({ top: -45, behavior: 'smooth' });
+        } else {
+            container.scrollBy({ top: 45, behavior: 'smooth' });
+        }
+    }
+
+    function toggleServiceSelection(srv, category, chk, itemElement) {
+        if (chk.checked) {
+            itemElement.classList.add('selected');
+            if (!selectedServices.some(s => s.name === srv.name)) {
+                selectedServices.push({ name: srv.name, price: srv.price, kategori: category });
+            }
+        } else {
+            itemElement.classList.remove('selected');
+            selectedServices = selectedServices.filter(s => s.name !== srv.name);
+        }
+        calculateLiveTotalBill();
+    }
+
+    function calculateLiveTotalBill() {
+        let subtotal = selectedServices.reduce((sum, s) => sum + s.price, 0);
+        let diskon = parseInt(document.getElementById('diskonHarga').value) || 0;
+        let finalTotal = Math.max(0, subtotal - diskon);
+        document.getElementById('liveTotalDisplay').innerText = `Rp ${finalTotal.toLocaleString('id-ID')}`;
+    }
+
+    function resetFormInputs() {
+        document.getElementById('namaPasien').value = "";
+        document.getElementById('nomorHp').value = "";
+        document.getElementById('alamatPasien').value = "";
+        document.getElementById('waktuReservasi').value = "";
+        document.getElementById('diskonHarga').value = "0";
+        selectedServices = [];
+        
+        document.querySelectorAll('.service-item input[type="checkbox"]').forEach(chk => chk.checked = false);
+        document.querySelectorAll('.service-item').forEach(item => item.classList.remove('selected'));
+        calculateLiveTotalBill();
+    }
+
+    function processLogoImageFile(input) {
+        if (input.files && input.files[0]) {
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                base64LogoDataStream = e.target.result;
+                localStorage.setItem("adzkiya_logo_stream", base64LogoDataStream);
+                
+                const uiWatermark = document.getElementById('uiWatermarkView');
+                uiWatermark.src = base64LogoDataStream;
+                uiWatermark.style.display = "block";
+                
+                const uiHeaderLogo = document.getElementById('uiHeaderLogoView');
+                if (uiHeaderLogo) {
+                    uiHeaderLogo.src = base64LogoDataStream;
+                }
+                
+                alert("✓ Logo berhasil diunggah dan disimpan ke sistem.");
+            };
+            reader.readAsDataURL(input.files[0]);
+        }
+    }
+
+    function sendReservationRequest() {
+        const nama = document.getElementById('namaPasien').value.trim();
+        const telp = document.getElementById('nomorHp').value.trim();
+        const alamat = document.getElementById('alamatPasien').value.trim();
+        const waktuRaw = document.getElementById('waktuReservasi').value;
+        const diskon = parseInt(document.getElementById('diskonHarga').value) || 0;
+        
+        if (!nama) { alert("Nama Pasien wajib diisi."); return; }
+        if (!waktuRaw) { alert("Waktu & Jam Reservasi harus diisi."); return; }
+        if (selectedServices.length === 0) { alert("Silakan pilih minimal satu layanan treatment."); return; }
+        
+        let totalLayanan = selectedServices.reduce((sum, s) => sum + s.price, 0);
+        let totalAkhir = Math.max(0, totalLayanan - diskon);
+        
+        const rawServicesStructured = JSON.parse(JSON.stringify(selectedServices));
+        const daftarLayananText = selectedServices.map(s => s.name).join(", ");
+        
+        const now = new Date();
+        const keyBulan = now.toLocaleString('id-ID', { month: 'long', year: 'numeric' });
+        const tanggalLengkap = now.toLocaleString('id-ID', { dateStyle: 'short', timeStyle: 'short' });
+        
+        const reservasiBaru = {
+            id: Date.now(),
+            nama: nama,
+            telp: telp || "-",
+            alamat: alamat || "-",
+            waktuISO: waktuRaw,
+            layanan: daftarLayananText,
+            rawServices: rawServicesStructured,
+            subtotal: totalLayanan,
+            diskon: diskon,
+            total: totalAkhir,
+            tanggal: tanggalLengkap,
+            kelompokBulan: keyBulan
+        };
+
+        let dataReservasi = localStorage.getItem("adzkiya_reservation_data");
+        dataReservasi = dataReservasi ? JSON.parse(dataReservasi) : [];
+        dataReservasi.unshift(reservasiBaru);
+        localStorage.setItem("adzkiya_reservation_data", JSON.stringify(dataReservasi));
+        
+        alert("✨ Reservasi Anda berhasil dikirim! Silakan hubungi Admin untuk persetujuan (ACC).");
+        resetFormInputs();
+        loadReservationRecords();
+        loadRecapRecords();
+    }
+
+    function checkUpcomingReservationsEngine() {
+        let dataRekap = localStorage.getItem("adzkiya_recap_data");
+        dataRekap = dataRekap ? JSON.parse(dataRekap) : [];
+        const sekarang = new Date();
+        
+        dataRekap.forEach(item => {
+            if (item.waktuISO) {
+                const waktuTarget = new Date(item.waktuISO);
+                const selisihMilidetik = waktuTarget - sekarang;
+                const selisihMenit = Math.floor(selisihMilidetik / 60000);
+                
+                if (selisihMenit >= 0 && selisihMenit <= 30) {
+                    if (!notifiedReservations[item.id]) {
+                        triggerSystemNotificationAlert(item, selisihMenit);
+                        notifiedReservations[item.id] = true;
+                    }
+                }
+            }
+        });
+    }
+
+    function triggerSystemNotificationAlert(item, sisaMenit) {
+        const pesanNotif = `Halo, jadwal treatment "${item.layanan}" atas nama ${item.nama} akan dimulai dalam ${sisaMenit} menit lagi!`;
+        if ("Notification" in window && Notification.permission === "granted") {
+            new Notification("⏰ Pengingat Reservasi Adzkiya", {
+                body: pesanNotif,
+                icon: base64LogoDataStream || ""
+            });
+        }
+        
+        const toast = document.createElement('div');
+        toast.className = 'toast-notification';
+        toast.innerHTML = `
+            <button class="toast-close" onclick="this.parentElement.remove()">×</button>
+            <div class="toast-title">⏰ PENGINGAT JADWAL</div>
+            <div>Jadwal <b>${item.nama}</b> (${item.layanan}) akan dimulai dalam <b>${sisaMenit} menit</b> lagi.</div>
+        `;
+        document.body.appendChild(toast);
+        setTimeout(() => { if(toast) toast.remove(); }, 12000);
+    }
+
+    function loadReservationRecords() {
+        const container = document.getElementById('reservationListContainer');
+        if (!container) return;
+        container.innerHTML = "";
+        
+        let dataReservasi = localStorage.getItem("adzkiya_reservation_data");
+        dataReservasi = dataReservasi ? JSON.parse(dataReservasi) : [];
+        
+        if (dataReservasi.length === 0) {
+            container.innerHTML = `<div style="text-align:center; font-size:12px; opacity:0.5; padding:20px;">Belum ada antrean reservasi masuk.</div>`;
+            return;
+        }
+        
+        dataReservasi.forEach(item => {
+            const card = document.createElement('div');
+            card.className = "reservation-item";
+            
+            const formattedWaktu = new Date(item.waktuISO).toLocaleString('id-ID', { dateStyle: 'medium', timeStyle: 'short' });
+            
+            card.innerHTML = `
+                <div class="name">${item.nama}</div>
+                <div class="details">📱 HP: ${item.telp} | 📍 Alamat: ${item.alamat}</div>
+                <div class="details" style="color:var(--theme-color); font-weight:700;">📅 Jadwal: ${formattedWaktu}</div>
+                <div class="details" style="border-top:1px dashed rgba(255,255,255,0.1); margin-top:5px; padding-top:5px;">📋 Layanan: ${item.layanan}</div>
+                <div class="price">Rp ${item.total.toLocaleString('id-ID')}</div>
+                <div class="reservation-actions-panel">
+                    <button class="btn-print-wait" style="background:#7c3aed;" onclick="openEditReservationModalDialog(${item.id})" title="Edit Reservasi / Diskon">✏️ Edit</button>
+                    <button class="btn-print-wait" onclick="printWaitListInvoiceDirect(${item.id})" title="Cetak Kwitansi Antrean">🖨️ Cetak</button>
+                    <button class="btn-acc" onclick="approveReservationAction(${item.id})">✓ ACC</button>
+                    <button class="btn-reject" onclick="rejectReservationAction(${item.id})">✕ Tolak</button>
+                </div>
+            `;
+            container.appendChild(card);
+        });
+    }
+
+    function openEditReservationModalDialog(id) {
+        let dataReservasi = JSON.parse(localStorage.getItem("adzkiya_reservation_data") || "[]");
+        let item = dataReservasi.find(x => x.id === id);
+        if (!item) return;
+
+        let editModal = document.getElementById('adzkiyaReservationEditModalElement');
+        if (!editModal) {
+            editModal = document.createElement('div');
+            editModal.id = 'adzkiyaReservationEditModalElement';
+            editModal.style = "position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.6);display:flex;align-items:center;justify-content:center;z-index:99999;padding:20px;box-sizing:border-box;";
+            document.body.appendChild(editModal);
+        }
+
+        let currentSubtotal = item.subtotal || (item.total + (item.diskon || 0));
+
+        editModal.innerHTML = `
+            <div style="background-color:#ffffff !important;color:#0f172a !important;width:100%;max-width:400px;border-radius:12px;padding:20px;box-sizing:border-box;box-shadow:0 10px 25px rgba(0,0,0,0.3);font-family:sans-serif;">
+                <h3 style="margin-top:0;color:#0f172a !important;border-bottom:2px solid #e2e8f0;padding-bottom:10px;display:flex;align-items:center;gap:8px;font-size:18px;">✏️ Edit Kwitansi Reservasi</h3>
+                
+                <div style="margin-bottom:12px;">
+                    <label style="display:block;font-size:12px;font-weight:bold;color:#475569 !important;margin-bottom:4px;">Nama Pasien</label>
+                    <input type="text" id="editResNama" value="${item.nama}" style="width:100%;padding:10px;border:2px solid #cbd5e1;border-radius:6px;box-sizing:border-box;background-color:#ffffff !important;color:#0f172a !important;font-size:14px;font-weight:600;">
+                </div>
+                
+                <div style="margin-bottom:12px;">
+                    <label style="display:block;font-size:12px;font-weight:bold;color:#475569 !important;margin-bottom:4px;">No. Telepon / HP</label>
+                    <input type="text" id="editResTelp" value="${item.telp || ''}" style="width:100%;padding:10px;border:2px solid #cbd5e1;border-radius:6px;box-sizing:border-box;background-color:#ffffff !important;color:#0f172a !important;font-size:14px;font-weight:600;">
+                </div>
+
+                <div style="margin-bottom:12px;">
+                    <label style="display:block;font-size:12px;font-weight:bold;color:#475569 !important;margin-bottom:4px;">Alamat Pasien</label>
+                    <input type="text" id="editResAlamat" value="${item.alamat || ''}" style="width:100%;padding:10px;border:2px solid #cbd5e1;border-radius:6px;box-sizing:border-box;background-color:#ffffff !important;color:#0f172a !important;font-size:14px;font-weight:600;">
+                </div>
+
+                <div style="margin-bottom:12px; background:#f8fafc; padding:8px; border-radius:6px; border:1px solid #e2e8f0;">
+                    <span style="font-size:11px; font-weight:bold; color:#64748b;">Subtotal Layanan Terpilih:</span>
+                    <div style="font-size:15px; font-weight:800; color:#0f172a;">Rp ${currentSubtotal.toLocaleString('id-ID')}</div>
+                </div>
+
+                <div style="margin-bottom:16px;">
+                    <label style="display:block;font-size:12px;font-weight:bold;color:#475569 !important;margin-bottom:4px;">Diskon Harga Baru (Rp)</label>
+                    <input type="number" id="editResDiskon" value="${item.diskon || 0}" style="width:100%;padding:10px;border:2px solid #cbd5e1;border-radius:6px;box-sizing:border-box;background-color:#ffffff !important;color:#0f172a !important;font-size:14px;font-weight:800;">
+                </div>
+
+                <div style="display:flex;gap:8px;justify-content:flex-end;">
+                    <button onclick="document.getElementById('adzkiyaReservationEditModalElement').remove()" style="padding:10px 14px;border:1px solid #cbd5e1;background:#f1f5f9;color:#475569;border-radius:6px;font-weight:bold;cursor:pointer;font-size:13px;">Batal</button>
+                    <button onclick="saveEditedReservationChangesValue(${item.id}, ${currentSubtotal})" style="padding:10px 16px;border:none;background:#7c3aed;color:#ffffff;border-radius:6px;font-weight:bold;cursor:pointer;font-size:13px;box-shadow:0 4px 6px rgba(124,58,237,0.2);">Simpan Perubahan</button>
+                </div>
+            </div>
+        `;
+    }
+
+    function saveEditedReservationChangesValue(id, subtotalValue) {
+        const inputNama = document.getElementById('editResNama').value.trim();
+        const inputTelp = document.getElementById('editResTelp').value.trim();
+        const inputAlamat = document.getElementById('editResAlamat').value.trim();
+        const inputDiskon = parseInt(document.getElementById('editResDiskon').value) || 0;
+
+        if (!inputNama) {
+            alert("Nama pasien tidak boleh dikosongkan!");
+            return;
+        }
+
+        let dataReservasi = JSON.parse(localStorage.getItem("adzkiya_reservation_data") || "[]");
+        let idx = dataReservasi.findIndex(x => x.id === id);
+        if (idx === -1) return;
+
+        let finalTotalValue = Math.max(0, subtotalValue - inputDiskon);
+
+        dataReservasi[idx].nama = inputNama;
+        dataReservasi[idx].telp = inputTelp || "-";
+        dataReservasi[idx].alamat = inputAlamat || "-";
+        dataReservasi[idx].subtotal = subtotalValue;
+        dataReservasi[idx].diskon = inputDiskon;
+        dataReservasi[idx].total = finalTotalValue;
+
+        localStorage.setItem("adzkiya_reservation_data", JSON.stringify(dataReservasi));
+        document.getElementById('adzkiyaReservationEditModalElement').remove();
+        
+        alert("✓ Kwitansi Antrean Reservasi berhasil diperbarui!");
+        loadReservationRecords();
+    }
+
+    function printWaitListInvoiceDirect(id) {
+        let dataReservasi = localStorage.getItem("adzkiya_reservation_data");
+        dataReservasi = dataReservasi ? JSON.parse(dataReservasi) : [];
+        const item = dataReservasi.find(x => x.id === id);
+        if (!item) return;
+        
+        executePdfInvoiceGenerationEngine(item, "KWITANSI ELEKTRONIK");
+    }
+
+    function approveReservationAction(id) {
+        let dataReservasi = localStorage.getItem("adzkiya_reservation_data");
+        dataReservasi = dataReservasi ? JSON.parse(dataReservasi) : [];
+        
+        const index = dataReservasi.findIndex(x => x.id === id);
+        if (index === -1) return;
+        
+        const approvedItem = dataReservasi.splice(index, 1)[0];
+        localStorage.setItem("adzkiya_reservation_data", JSON.stringify(dataReservasi));
+        
+        let dataRekap = localStorage.getItem("adzkiya_recap_data");
+        dataRekap = dataRekap ? JSON.parse(dataRekap) : [];
+        dataRekap.unshift(approvedItem);
+        localStorage.setItem("adzkiya_recap_data", JSON.stringify(dataRekap));
+        
+        alert("✓ Reservasi disetujui dan BERHASIL dimasukkan ke Rekapan Utama!");
+        loadReservationRecords();
+        loadRecapRecords();
+    }
+
+    function rejectReservationAction(id) {
+        if (!confirm("Apakah Anda yakin ingin menghapus/menolak reservasi ini?")) return;
+        let dataReservasi = localStorage.getItem("adzkiya_reservation_data");
+        dataReservasi = dataReservasi ? JSON.parse(dataReservasi) : [];
+        dataReservasi = dataReservasi.filter(x => x.id !== id);
+        localStorage.setItem("adzkiya_reservation_data", JSON.stringify(dataReservasi));
+        loadReservationRecords();
+    }
+
+    function loadRecapRecords() {
+        const container = document.getElementById('recapListContainer');
+        if (!container) return;
+        container.innerHTML = "";
+        
+        let dataRekap = localStorage.getItem("adzkiya_recap_data");
+        dataRekap = dataRekap ? JSON.parse(dataRekap) : [];
+        
+        calculateMonthlyRevenueReport(dataRekap);
+        
+        if (dataRekap.length === 0) {
+            container.innerHTML = `<div style="text-align:center; font-size:12px; opacity:0.5; padding:20px;">Belum ada rekapan data transaksi.</div>`;
+            return;
+        }
+        
+        let grouped = {};
+        dataRekap.forEach(item => {
+            const mKey = item.kelompokBulan || "Lainnya";
+            if (!grouped[mKey]) grouped[mKey] = [];
+            grouped[mKey].push(item);
+        });
+        
+        for (const bulan in grouped) {
+            const groupTitle = document.createElement('div');
+            groupTitle.className = "month-group-title";
+            let subTotalBulan = grouped[bulan].reduce((s, i) => s + (i.total || 0), 0);
+            groupTitle.innerHTML = `<span>📅 ${bulan.toUpperCase()}</span> <span>Rp ${subTotalBulan.toLocaleString('id-ID')}</span>`;
+            container.appendChild(groupTitle);
+            
+            grouped[bulan].forEach(item => {
+                const card = document.createElement('div');
+                card.className = "recap-item";
+                const formattedWaktu = new Date(item.waktuISO).toLocaleString('id-ID', { dateStyle: 'medium', timeStyle: 'short' });
+                
+                card.innerHTML = `
+                    <div class="name">${item.nama}</div>
+                    <div class="details">📱 ${item.telp} | 📍 ${item.alamat}</div>
+                    <div class="details" style="color:var(--text-main); font-weight:600;">⏰ Treatment: ${formattedWaktu}</div>
+                    <div class="details" style="font-size:10px; color:var(--text-sub); border-top:1px dashed rgba(255,255,255,0.06); margin-top:4px; padding-top:4px;">✨ ${item.layanan}</div>
+                    <div class="price">Rp ${item.total.toLocaleString('id-ID')}</div>
+                    <button class="btn-item-action btn-reprint" onclick="reprintInvoicePDFDataDirect(${item.id})" title="Cetak Ulang Kwitansi">🖨️</button>
+                    <button class="btn-item-action btn-delete" onclick="deleteRecapRecordItem(${item.id})" title="Hapus Data">🗑️</button>
+                    <button class="btn-item-action" style="right:56px; color:#eab308;" onclick="openEditRecapModalDialog(${item.id})" title="Edit Transaksi / Diskon">✏️</button>
+                `;
+                container.appendChild(card);
+            });
+        }
+    }
+
+    function openEditRecapModalDialog(id) {
+        let dataRekap = JSON.parse(localStorage.getItem("adzkiya_recap_data") || "[]");
+        let item = dataRekap.find(x => x.id === id);
+        if (!item) return;
+
+        let editModal = document.getElementById('adzkiyaEditModalElement');
+        if (!editModal) {
+            editModal = document.createElement('div');
+            editModal.id = 'adzkiyaEditModalElement';
+            editModal.style = "position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.6);display:flex;align-items:center;justify-content:center;z-index:99999;padding:20px;box-sizing:border-box;";
+            document.body.appendChild(editModal);
+        }
+
+        let currentSubtotal = item.subtotal || (item.total + (item.diskon || 0));
+
+        editModal.innerHTML = `
+            <div style="background-color:#ffffff !important;color:#0f172a !important;width:100%;max-width:400px;border-radius:12px;padding:20px;box-sizing:border-box;box-shadow:0 10px 25px rgba(0,0,0,0.3);font-family:sans-serif;">
+                <h3 style="margin-top:0;color:#0f172a !important;border-bottom:2px solid #e2e8f0;padding-bottom:10px;display:flex;align-items:center;gap:8px;font-size:18px;">✏️ Edit Kwitansi & Diskon</h3>
+                
+                <div style="margin-bottom:12px;">
+                    <label style="display:block;font-size:12px;font-weight:bold;color:#475569 !important;margin-bottom:4px;">Nama Pasien</label>
+                    <input type="text" id="editFieldNama" value="${item.nama}" style="width:100%;padding:10px;border:2px solid #cbd5e1;border-radius:6px;box-sizing:border-box;background-color:#ffffff !important;color:#0f172a !important;font-size:14px;font-weight:600;">
+                </div>
+                
+                <div style="margin-bottom:12px;">
+                    <label style="display:block;font-size:12px;font-weight:bold;color:#475569 !important;margin-bottom:4px;">No. Telepon / HP</label>
+                    <input type="text" id="editFieldTelp" value="${item.telp || ''}" style="width:100%;padding:10px;border:2px solid #cbd5e1;border-radius:6px;box-sizing:border-box;background-color:#ffffff !important;color:#0f172a !important;font-size:14px;font-weight:600;">
+                </div>
+
+                <div style="margin-bottom:12px;">
+                    <label style="display:block;font-size:12px;font-weight:bold;color:#475569 !important;margin-bottom:4px;">Alamat Pasien</label>
+                    <input type="text" id="editFieldAlamat" value="${item.alamat || ''}" style="width:100%;padding:10px;border:2px solid #cbd5e1;border-radius:6px;box-sizing:border-box;background-color:#ffffff !important;color:#0f172a !important;font-size:14px;font-weight:600;">
+                </div>
+
+                <div style="margin-bottom:12px; background:#f8fafc; padding:8px; border-radius:6px; border:1px solid #e2e8f0;">
+                    <span style="font-size:11px; font-weight:bold; color:#64748b;">Subtotal Layanan Terpilih:</span>
+                    <div style="font-size:15px; font-weight:800; color:#0f172a;">Rp ${currentSubtotal.toLocaleString('id-ID')}</div>
+                </div>
+
+                <div style="margin-bottom:16px;">
+                    <label style="display:block;font-size:12px;font-weight:bold;color:#475569 !important;margin-bottom:4px;">Diskon Harga Baru (Rp)</label>
+                    <input type="number" id="editFieldDiskon" value="${item.diskon || 0}" style="width:100%;padding:10px;border:2px solid #cbd5e1;border-radius:6px;box-sizing:border-box;background-color:#ffffff !important;color:#0f172a !important;font-size:14px;font-weight:800;">
+                </div>
+
+                <div style="display:flex;gap:8px;justify-content:flex-end;">
+                    <button onclick="document.getElementById('adzkiyaEditModalElement').remove()" style="padding:10px 14px;border:1px solid #cbd5e1;background:#f1f5f9;color:#475569;border-radius:6px;font-weight:bold;cursor:pointer;font-size:13px;">Batal</button>
+                    <button onclick="saveEditedRecapChangesValue(${item.id}, ${currentSubtotal})" style="padding:10px 16px;border:none;background:#7c3aed;color:#ffffff;border-radius:6px;font-weight:bold;cursor:pointer;font-size:13px;box-shadow:0 4px 6px rgba(124,58,237,0.2);">Simpan Perubahan</button>
+                </div>
+            </div>
+        `;
+    }
+
+    function saveEditedRecapChangesValue(id, subtotalValue) {
+        const inputNama = document.getElementById('editFieldNama').value.trim();
+        const inputTelp = document.getElementById('editFieldTelp').value.trim();
+        const inputAlamat = document.getElementById('editFieldAlamat').value.trim();
+        const inputDiskon = parseInt(document.getElementById('editFieldDiskon').value) || 0;
+
+        if (!inputNama) {
+            alert("Nama pasien tidak boleh dikosongkan!");
+            return;
+        }
+
+        let dataRekap = JSON.parse(localStorage.getItem("adzkiya_recap_data") || "[]");
+        let idx = dataRekap.findIndex(x => x.id === id);
+        if (idx === -1) return;
+
+        let finalTotalValue = Math.max(0, subtotalValue - inputDiskon);
+
+        dataRekap[idx].nama = inputNama;
+        dataRekap[idx].telp = inputTelp || "-";
+        dataRekap[idx].alamat = inputAlamat || "-";
+        dataRekap[idx].subtotal = subtotalValue;
+        dataRekap[idx].diskon = inputDiskon;
+        dataRekap[idx].total = finalTotalValue;
+
+        localStorage.setItem("adzkiya_recap_data", JSON.stringify(dataRekap));
+        document.getElementById('adzkiyaEditModalElement').remove();
+        
+        alert("✓ Data rekapan dan nilai diskon berhasil diperbarui!");
+        loadRecapRecords();
+    }
+
+    function calculateMonthlyRevenueReport(recapDataArray) {
+        const container = document.getElementById('incomeRowsContainer');
+        if (!container) return;
+        container.innerHTML = "";
+        
+        let revenueMap = {};
+        recapDataArray.forEach(item => {
+            const key = item.kelompokBulan || "Lainnya";
+            revenueMap[key] = (revenueMap[key] || 0) + (item.total || 0);
+        });
+        
+        if (Object.keys(revenueMap).length === 0) {
+            container.innerHTML = `<div style="font-size:11px; opacity:0.5; text-align:center; padding:5px 0;">Belum tersedia kalkulasi omset.</div>`;
+            return;
+        }
+        
+        for (const bulan in revenueMap) {
+            const row = document.createElement('div');
+            row.className = "income-row";
+            row.innerHTML = `
+                <span class="month-lbl">📈 ${bulan}</span>
+                <span class="amount-val">Rp ${revenueMap[bulan].toLocaleString('id-ID')}</span>
+            `;
+            container.appendChild(row);
+        }
+    }
+
+    function deleteRecapRecordItem(id) {
+        if (!confirm("Apakah Anda yakin ingin menghapus data rekapan transaksi ini secara permanen?")) return;
+        let dataRekap = localStorage.getItem("adzkiya_recap_data");
+        dataRekap = dataRekap ? JSON.parse(dataRekap) : [];
+        
+        dataRekap = dataRekap.filter(x => x.id !== id);
+        localStorage.setItem("adzkiya_recap_data", JSON.stringify(dataRekap));
+        loadRecapRecords();
+    }
+
+    function clearAllRecapRecords() {
+        if (!confirm("PERINGATAN Kritis! Tindakan ini akan menghapus seluruh data rekapan selamanya. Lanjutkan?")) return;
+        localStorage.removeItem("adzkiya_recap_data");
+        loadRecapRecords();
+    }
+
+    function saveCustomerToRecapDirect() {
+        const nama = document.getElementById('namaPasien').value.trim();
+        const telp = document.getElementById('nomorHp').value.trim();
+        const alamat = document.getElementById('alamatPasien').value.trim();
+        const waktuRaw = document.getElementById('waktuReservasi').value;
+        const diskon = parseInt(document.getElementById('diskonHarga').value) || 0;
+        
+        if (!nama) { alert("Nama Pasien wajib diisi."); return; }
+        if (!waktuRaw) { alert("Waktu & Jam wajib ditentukan."); return; }
+        if (selectedServices.length === 0) { alert("Pilih minimal satu layanan."); return; }
+        
+        let totalLayanan = selectedServices.reduce((sum, s) => sum + s.price, 0);
+        let totalAkhir = Math.max(0, totalLayanan - diskon);
+        
+        const rawServicesStructured = JSON.parse(JSON.stringify(selectedServices));
+        const daftarLayananText = selectedServices.map(s => s.name).join(", ");
+        
+        const now = new Date();
+        const keyBulan = now.toLocaleString('id-ID', { month: 'long', year: 'numeric' });
+        const tanggalLengkap = now.toLocaleString('id-ID', { dateStyle: 'short', timeStyle: 'short' });
+        
+        const itemLangsung = {
+            id: Date.now(),
+            nama: nama,
+            telp: telp || "-",
+            alamat: alamat || "-",
+            waktuISO: waktuRaw,
+            layanan: daftarLayananText,
+            rawServices: rawServicesStructured,
+            subtotal: totalLayanan,
+            diskon: diskon,
+            total: totalAkhir,
+            tanggal: tanggalLengkap,
+            kelompokBulan: keyBulan
+        };
+
+        let dataRekap = localStorage.getItem("adzkiya_recap_data");
+        dataRekap = dataRekap ? JSON.parse(dataRekap) : [];
+        dataRekap.unshift(itemLangsung);
+        localStorage.setItem("adzkiya_recap_data", JSON.stringify(dataRekap));
+        
+        alert("🎯 Transaksi sukses disimpan langsung ke rekapan utama!");
+        resetFormInputs();
+        loadRecapRecords();
+    }
+
+    function backupDatabaseToJSON() {
+        showDatabaseAnimationLoader("Enkripsi Data Sistem...", "Mengemas paket database arsip offline...");
+        
+        const backupPackage = {
+            reservations: JSON.parse(localStorage.getItem("adzkiya_reservation_data") || "[]"),
+            recap: JSON.parse(localStorage.getItem("adzkiya_recap_data") || "[]"),
+            savedLogo: base64LogoDataStream || ""
+        };
+
+        animatePercentageCounter(0, 100, 1000, 
+            (v) => updateLoaderPercentage(v),
+            () => {
+                const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(backupPackage));
+                const downloadAnchor = document.createElement('a');
+                downloadAnchor.setAttribute("href", dataStr);
+                downloadAnchor.setAttribute("download", `AdzkiyaDB_Offline_Backup_${Date.now()}.json`);
+                document.body.appendChild(downloadAnchor);
+                downloadAnchor.click();
+                downloadAnchor.remove();
+                endDatabaseAnimationLoader(true, "Database sukses diexport offline!");
+            }
+        );
+    }
+
+    function triggerImportFileInput() {
+        document.getElementById('importFileSource').click();
+    }
+
+    function importDatabaseFromJSON(input) {
+        if (!input.files || input.files[0] === undefined) return;
+        
+        showDatabaseAnimationLoader("Membaca Berkas File...", "Menganalisis integritas data objek...");
+        const file = input.files[0];
+        const reader = new FileReader();
+        
+        reader.onload = function(e) {
+            try {
+                const importedObj = JSON.parse(e.target.result);
+                if (importedObj.reservations && importedObj.recap) {
+                    animatePercentageCounter(0, 100, 1800, 
+                        (currentValue) => { updateLoaderPercentage(currentValue); }, 
+                        () => {
+                            localStorage.setItem("adzkiya_reservation_data", JSON.stringify(importedObj.reservations));
+                            localStorage.setItem("adzkiya_recap_data", JSON.stringify(importedObj.recap));
+                            
+                            if (importedObj.savedLogo) {
+                                base64LogoDataStream = importedObj.savedLogo;
+                                const uiWatermark = document.getElementById('uiWatermarkView');
+                                uiWatermark.src = base64LogoDataStream;
+                                uiWatermark.style.display = "block";
+                                
+                                const uiHeaderLogo = document.getElementById('uiHeaderLogoView');
+                                if (uiHeaderLogo) {
+                                    uiHeaderLogo.src = base64LogoDataStream;
+                                }
+                            }
+                            
+                            endDatabaseAnimationLoader(true, "Restorasi data offline berhasil!", () => {
+                                loadReservationRecords();
+                                loadRecapRecords();
+                                calculateLiveTotalBill();
+                            });
+                            input.value = "";
+                        }
+                    );
+                } else {
+                    endDatabaseAnimationLoader(false, "Format skema berkas JSON tidak sesuai.");
+                    input.value = "";
+                }
+            } catch (err) {
+                endDatabaseAnimationLoader(false, "Gagal parsing file JSON rusak.");
+                input.value = "";
+            }
+        };
+        reader.readAsText(file);
+    }
+
+    function cloudGoogleDriveSync(actionType) {
+        if (!GOOGLE_APPS_SCRIPT_URL || GOOGLE_APPS_SCRIPT_URL.includes("YOUR_")) {
+            alert("Sistem Cloud Google Drive belum diaktifkan. Konfigurasikan URL skrip Anda terlebih dahulu.");
+            return;
+        }
+
+        if (actionType === 'backup') {
+            if (!confirm("Apakah Anda yakin ingin mencadangkan (Backup) seluruh data lokal ke Google Drive? Data lama di Drive akan diperbarui.")) return;
+            
+            showDatabaseAnimationLoader("Menyiapkan Berkas...", "Enkripsi objek data riwayat...");
+            
+            const backupPackage = {
+                reservations: JSON.parse(localStorage.getItem("adzkiya_reservation_data") || "[]"),
+                recap: JSON.parse(localStorage.getItem("adzkiya_recap_data") || "[]"),
+                savedLogo: base64LogoDataStream || ""
+            };
+
+            animatePercentageCounter(0, 65, 800, (v) => updateLoaderPercentage(v), () => {
+                document.getElementById('dbLoaderText').innerText = "Mengirim ke Google Drive...";
+                
+                fetch(GOOGLE_APPS_SCRIPT_URL, {
+                    method: "POST",
+                    mode: "no-cors",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ action: "backup", data: backupPackage })
+                })
+                .then(() => {
+                    animatePercentageCounter(65, 100, 500, (v) => updateLoaderPercentage(v), () => {
+                        endDatabaseAnimationLoader(true, "Backup Online Berhasil!", () => {
+                            alert("✓ Data berhasil dicadangkan ke Google Drive Anda.");
+                        });
+                    });
+                })
+                .catch(err => {
+                    endDatabaseAnimationLoader(false, "Gagal terhubung ke Cloud server.");
+                    alert("✕ Terjadi kesalahan koneksi saat melakukan backup.");
+                });
+            });
+
+        } else if (actionType === 'restore') {
+            if (!confirm("PERINGATAN! Fitur Restore akan mengunduh data dari Google Drive dan menggantikan seluruh data saat ini. Lanjutkan?")) return;
+            
+            showDatabaseAnimationLoader("Menghubungkan ke Cloud...", "Mengunduh arsip data terakhir...");
+            
+            let urlWithAction = GOOGLE_APPS_SCRIPT_URL + (GOOGLE_APPS_SCRIPT_URL.includes("?") ? "&" : "?") + "action=restore";
+            
+            fetch(urlWithAction)
+            .then(response => {
+                if (!response.ok) throw new Error("Network response was not ok");
+                return response.json(); 
+            })
+            .then(res => {
+                document.getElementById('dbLoaderText').innerText = "Menganalisis Integritas Data...";
+                
+                let detectedReservations = [];
+                let detectedRecap = [];
+                let detectedLogo = "";
+
+                let targetObj = res;
+                if (res && res.data) {
+                    targetObj = res.data;
+                }
+
+                if (targetObj.reservations && Array.isArray(targetObj.reservations)) {
+                    detectedReservations = targetObj.reservations;
+                }
+                if (targetObj.recap && Array.isArray(targetObj.recap)) {
+                    detectedRecap = targetObj.recap;
+                }
+                if (targetObj.savedLogo) {
+                    detectedLogo = targetObj.savedLogo;
+                }
+
+                if (detectedReservations.length === 0 && detectedRecap.length === 0) {
+                    function harvestArrays(obj) {
+                        if (!obj || typeof obj !== 'object') return;
+                        if (Array.isArray(obj)) {
+                            if (obj.length > 0) {
+                                let sample = obj[0];
+                                if (sample && typeof sample === 'object' && !Array.isArray(sample)) {
+                                    if ('kelompokBulan' in sample || 'layanan' in sample || 'total' in sample || 'subtotal' in sample) {
+                                        detectedRecap = obj;
+                                    } else if ('waktuISO' in sample || 'kategori' in sample || 'waktuReservasi' in sample || 'namaPasien' in sample || 'nama' in sample) {
+                                        if (!detectedReservations.length) detectedReservations = obj;
+                                    }
+                                } else if (Array.isArray(sample) || typeof sample === 'string') {
+                                    if (!detectedRecap.length) detectedRecap = obj;
+                                }
+                            }
+                            return;
+                        }
+                        for (let key in obj) {
+                            if (obj.hasOwnProperty(key)) {
+                                let val = obj[key];
+                                if (typeof val === 'string' && (val.trim().startsWith('[') || val.trim().startsWith('{'))) {
+                                    try { let parsed = JSON.parse(val); harvestArrays(parsed); } catch(e) {}
+                                } else if (typeof val === 'object' && val !== null) {
+                                    harvestArrays(val);
+                                }
+                            }
+                        }
+                    }
+                    harvestArrays(targetObj);
+                }
+
+                animatePercentageCounter(0, 100, 1200, (val) => {
+                    updateLoaderPercentage(val);
+                }, () => {
+                    localStorage.setItem("adzkiya_reservation_data", JSON.stringify(detectedReservations));
+                    localStorage.setItem("adzkiya_recap_data", JSON.stringify(detectedRecap));
+                    
+                    if (detectedLogo) {
+                        base64LogoDataStream = detectedLogo;
+                        localStorage.setItem("adzkiya_logo_stream", base64LogoDataStream);
+                        const uiWatermark = document.getElementById('uiWatermarkView');
+                        if (uiWatermark) {
+                            uiWatermark.src = base64LogoDataStream;
+                            uiWatermark.style.display = "block";
+                        }
+                        const uiHeaderLogo = document.getElementById('uiHeaderLogoView');
+                        if (uiHeaderLogo) {
+                            uiHeaderLogo.src = base64LogoDataStream;
+                        }
+                    }
+                    
+                    endDatabaseAnimationLoader(true, "Restorasi Cloud Berhasil!", () => {
+                        loadReservationRecords();
+                        loadRecapRecords();
+                        calculateLiveTotalBill();
+                        alert("✓ Sinkronisasi data dari Google Drive selesai! Seluruh UI dan tabel omset telah diperbarui.");
+                    });
+                });
+            })
+            .catch(err => {
+                console.error(err);
+                endDatabaseAnimationLoader(false, "Gangguan koneksi lintas platform / CORS.");
+                alert("✕ Gagal memulihkan data. Pastikan Google Apps Script Anda mengembalikan data JSON valid dan mengizinkan akses (CORS).");
+            });
+        }
+    }
+
+    function generatePremiumInvoicePDF() {
+        const nama = document.getElementById('namaPasien').value.trim();
+        if (!nama) { alert("Nama Pasien kosong. Tidak dapat mencetak kwitansi."); return; }
+        
+        const telp = document.getElementById('nomorHp').value.trim();
+        const alamat = document.getElementById('alamatPasien').value.trim();
+        const waktuRaw = document.getElementById('waktuReservasi').value;
+        const diskon = parseInt(document.getElementById('diskonHarga').value) || 0;
+        
+        let subtotal = selectedServices.reduce((sum, s) => sum + s.price, 0);
+        let total = Math.max(0, subtotal - diskon);
+        
+        const formatDataDummy = {
+            id: Date.now(),
+            nama: nama,
+            telp: telp,
+            alamat: alamat,
+            waktuISO: waktuRaw,
+            subtotal: subtotal,
+            diskon: diskon,
+            total: total,
+            rawServices: JSON.parse(JSON.stringify(selectedServices))
+        };
+        
+        executePdfInvoiceGenerationEngine(formatDataDummy, "KWITANSI ELEKTRONIK");
+    }
+
+    function reprintInvoicePDFDataDirect(id) {
+        let dataRekap = localStorage.getItem("adzkiya_recap_data");
+        dataRekap = dataRekap ? JSON.parse(dataRekap) : [];
+        const item = dataRekap.find(x => x.id === id);
+        if (!item) return;
+
+        executePdfInvoiceGenerationEngine(item, "KWITANSI ELEKTRONIK");
+    }
+
+    function executePdfInvoiceGenerationEngine(dataItem, judulKwitansi) {
+        const { jsPDF } = window.jspdf;
+        const doc = new jsPDF({ orientation: "p", unit: "mm", format: "a5" });
+        
+        let rgbTheme = hexToRgbComponents(currentThemeHex);
+        
+        doc.setFillColor(254, 242, 244);
+        doc.rect(0, 0, 148, 38, "F");
+        
+        if (base64LogoDataStream) {
+            try { 
+                let imgType = base64LogoDataStream.includes("png") ? "PNG" : "JPEG";
+                doc.addImage(base64LogoDataStream, imgType, 12, 8, 22, 22, undefined, 'FAST'); 
+            } catch(e){ console.error("Logo error:", e); }
+        }
+        
+        doc.setFont("helvetica", "bold");
+        doc.setFontSize(14);
+        doc.setTextColor(rgbTheme.r, rgbTheme.g, rgbTheme.b);
+        doc.text("ADZKIYA MOM BABY CARE", 38, 14);
+        
+        doc.setFont("helvetica", "normal");
+        doc.setFontSize(8);
+        doc.setTextColor(100, 116, 139);
+        doc.text("Layanan Kesehatan Ibu & Anak Terpercaya", 38, 19);
+        
+        doc.setFontSize(7.5);
+        doc.text("Dusun Klumprit Kulon No. 217 RT 1 RW 1 Klumprit,", 38, 24);
+        doc.text("Nusawungu, Cilacap 53283", 38, 28);
+        
+        doc.setLineWidth(0.5);
+        doc.setDrawColor(rgbTheme.r, rgbTheme.g, rgbTheme.b);
+        doc.line(12, 38, 136, 38);
+        
+        doc.setFont("helvetica", "bold");
+        doc.setFontSize(11);
+        doc.setTextColor(15, 23, 42);
+        doc.text(judulKwitansi, 12, 45);
+        
+        doc.setLineWidth(0.2);
+        doc.setDrawColor(226, 232, 240);
+        doc.line(12, 48, 136, 48);
+        
+        doc.setFont("helvetica", "normal");
+        doc.setFontSize(9);
+        
+        doc.text("Nama Pasien", 12, 54); doc.text(":", 38, 54); doc.text(`${dataItem.nama}`, 41, 54);
+        doc.text("No. Telp/HP", 12, 59); doc.text(":", 38, 59); doc.text(`${dataItem.telp || "-"}`, 41, 59);
+        doc.text("Alamat", 12, 64);     doc.text(":", 38, 64); doc.text(`${dataItem.alamat || "-"}`, 41, 64);
+        
+        let formattedWaktu = dataItem.waktuISO ? new Date(dataItem.waktuISO).toLocaleString('id-ID', { dateStyle: 'long', timeStyle: 'short' }) : "-";
+        doc.text("Waktu/Jam", 12, 69);  doc.text(":", 38, 69); doc.text(`${formattedWaktu}`, 41, 69);
+        
+        let nomorInvoiceGenerated = dataItem.id ? `INV-${dataItem.id}` : `INV-${Date.now()}`;
+        doc.text("No. Invoice", 12, 74); doc.text(":", 38, 74); doc.text(`${nomorInvoiceGenerated}`, 41, 74);
+        
+        let tableRowsOutput = [];
+        if (dataItem.rawServices && Array.isArray(dataItem.rawServices) && dataItem.rawServices.length > 0) {
+            tableRowsOutput = dataItem.rawServices.map((s, index) => [
+                index + 1,
+                s.kategori || "UMUM",
+                s.name,
+                `Rp ${s.price.toLocaleString('id-ID')}`
+            ]);
+        } else {
+            let fallbackLayanan = dataItem.layanan || "Layanan Treatment";
+            let fallbackSubtotal = dataItem.subtotal || dataItem.total || 0;
+            tableRowsOutput = [[1, "UMUM", fallbackLayanan, `Rp ${fallbackSubtotal.toLocaleString('id-ID')}`]];
+        }
+        
+        doc.autoTable({
+            startY: 79,
+            margin: { left: 12, right: 12 },
+            head: [['No', 'Kategori', 'Nama Layanan Treatment', 'Harga']],
+            body: tableRowsOutput,
+            theme: 'grid',
+            headStyles: { fillColor: [rgbTheme.r, rgbTheme.g, rgbTheme.b], textColor: [255, 255, 255], fontSize: 9, fontStyle: 'bold', halign: 'center' },
+            bodyStyles: { fontSize: 8, textColor: [51, 65, 85] },
+            columnStyles: {
+                0: { cellWidth: 8, halign: 'center' },
+                1: { cellWidth: 32 },
+                2: { cellWidth: 54 },
+                3: { cellWidth: 30, halign: 'right' }
+            },
+            styles: { font: "helvetica" }
+        });
+        
+        let finalY = doc.lastAutoTable.finalY + 8;
+        if (finalY > 170) { doc.addPage(); finalY = 15; }
+        
+        let currentSubtotal = dataItem.subtotal || (dataItem.total + (dataItem.diskon || 0));
+        let currentDiskon = dataItem.diskon || 0;
+        
+        doc.setFont("helvetica", "normal");
+        doc.setFontSize(9);
+        doc.text("Subtotal Layanan :", 75, finalY);
+        doc.text(`Rp ${currentSubtotal.toLocaleString('id-ID')}`, 136, finalY, { align: "right" });
+        
+        doc.text("Potongan Diskon :", 75, finalY + 5);
+        doc.text(`- Rp ${currentDiskon.toLocaleString('id-ID')}`, 136, finalY + 5, { align: "right" });
+        
+        doc.setLineWidth(0.2);
+        doc.setDrawColor(203, 213, 225);
+        doc.line(75, finalY + 8, 136, finalY + 8);
+        
+        doc.setFont("helvetica", "bold");
+        doc.setFontSize(11);
+        doc.text("TOTAL BAYAR :", 75, finalY + 13);
+        doc.text(`Rp ${dataItem.total.toLocaleString('id-ID')}`, 136, finalY + 13, { align: "right" });
+        
+        let ttdY = finalY + 22;
+        if (ttdY > 185) { doc.addPage(); ttdY = 20; }
+        
+        doc.setFont("helvetica", "normal");
+        doc.setFontSize(9.5);
+        doc.setTextColor(15, 23, 42);
+        doc.text("Bidan Praktisi,", 105, ttdY, { align: "center" });
+        
+        doc.setFont("helvetica", "bold");
+        doc.text("Tasya Hanifah Pramesti, A.Md. Keb., CBME", 105, ttdY + 18, { align: "center" });
+        
+        doc.setFont("helvetica", "italic");
+        doc.setFontSize(7.5);
+        doc.setTextColor(148, 163, 184);
+        doc.text("* Terima kasih atas kepercayaan Anda pada Adzkiya Mom Baby Care", 12, ttdY + 24);
+        doc.text(`Dicetak pada: ${new Date().toLocaleString('id-ID')}`, 12, ttdY + 27);
+        
+        doc.save(`Kwitansi_Adzkiya_${dataItem.nama.replace(/\s+/g, '_')}_${Date.now()}.pdf`);
+    }
+
+    function exportRecapToExcelXML() {
+        let dataRekap = localStorage.getItem("adzkiya_recap_data");
+        dataRekap = dataRekap ? JSON.parse(dataRekap) : [];
+        
+        if (dataRekap.length === 0) {
+            alert("Tidak ada data rekapan yang bisa diexport ke Excel.");
+            return;
+        }
+
+        let excelTemplate = `
+        <html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel" xmlns="http://www.w3.org/TR/REC-html40">
+        <head>
+        <meta charset="utf-8">
+        <style>
+            .title-hdr { font-family: sans-serif; font-size: 16px; font-weight: bold; text-align: center; color: #ff5a79; }
+            .sub-title { font-family: sans-serif; font-size: 11px; text-align: center; color: #475569; }
+            .th-style { background-color: #ff5a79; color: #ffffff; font-family: sans-serif; font-size: 11px; font-weight: bold; text-align: center; border: 0.5pt solid #cbd5e1; }
+            .month-title { background-color: #f1f5f9; color: #4f46e5; font-family: sans-serif; font-size: 11px; font-weight: bold; border: 0.5pt solid #cbd5e1; padding: 4px; }
+            .cell-text { font-family: sans-serif; font-size: 10px; border: 0.5pt solid #cbd5e1; }
+            .cell-center { font-family: sans-serif; font-size: 10px; text-align: center; border: 0.5pt solid #cbd5e1; }
+            .cell-left { font-family: sans-serif; font-size: 10px; text-align: left; border: 0.5pt solid #cbd5e1; }
+            .cell-currency { font-family: sans-serif; font-size: 10px; text-align: right; mso-number-format: "\\#\\,\\#\\#0"; border: 0.5pt solid #cbd5e1; }
+            .total-label { background-color: #fef2f4; font-family: sans-serif; font-size: 11px; font-weight: bold; text-align: right; border: 0.5pt solid #cbd5e1; }
+            .total-currency { background-color: #fef2f4; font-family: sans-serif; font-size: 11px; font-weight: bold; text-align: right; mso-number-format: "\\#\\,\\#\\#0"; border: 0.5pt solid #cbd5e1; color: #ff5a79; }
+        </style>
+        </head>
+        <body>
+        <table>
+            <tr><td colspan="10" class="title-hdr">ADZKIYA MOM BABY CARE</td></tr>
+            <tr><td colspan="10" class="sub-title">Laporan Rekapitulasi Transaksi Omset Bulanan Terkelompok</td></tr>
+            <tr><td colspan="10" class="sub-title">Tanggal Ekstraksi: ${new Date().toLocaleString('id-ID')}</td></tr>
+            <tr><td colspan="10"></td></tr>
+            <tr style="height: 26px;">
+                <th class="th-style" style="width: 40px;">NO</th>
+                <th class="th-style" style="width: 130px;">ID KLIEN</th>
+                <th class="th-style" style="width: 160px;">NAMA PASIEN</th>
+                <th class="th-style" style="width: 110px;">NO TELEPON</th>
+                <th class="th-style" style="width: 180px;">ALAMAT DOMISILI</th>
+                <th class="th-style" style="width: 250px;">LAYANAN TREATMENT</th>
+                <th class="th-style" style="width: 120px;">TANGGAL ACC</th>
+                <th class="th-style" style="width: 100px;">SUBTOTAL (Rp)</th>
+                <th class="th-style" style="width: 90px;">DISKON (Rp)</th>
+                <th class="th-style" style="width: 110px;">TOTAL NET (Rp)</th>
+            </tr>
+        `;
+
+        let grouped = {};
+        dataRekap.forEach(item => {
+            const mKey = item.kelompokBulan || "Lainnya";
+            if (!grouped[mKey]) grouped[mKey] = [];
+            grouped[mKey].push(item);
+        });
+
+        let counter = 1;
+        for (const monthName in grouped) {
+            excelTemplate += `
+                <tr>
+                    <td colspan="10" class="month-title"> BULAN: ${monthName.toUpperCase()}</td>
+                </tr>`;
+            
+            let monthlySubtotal = 0;
+            let monthlyDiskon = 0;
+            let monthlyTotal = 0;
+            
+            grouped[monthName].forEach(d => {
+                monthlySubtotal += (d.subtotal || d.total || 0);
+                monthlyDiskon += (d.diskon || 0);
+                monthlyTotal += (d.total || 0);
+                
+                let cleanLayanan = htmlEscapeSpecial(d.layanan);
+                let cleanNama = htmlEscapeSpecial(d.nama);
+                let cleanAlamat = htmlEscapeSpecial(d.alamat);
+                let formattedBooking = d.waktuISO ? new Date(d.waktuISO).toLocaleString('id-ID', {dateStyle:'short'}) : "-";
+
+                excelTemplate += `
+                <tr>
+                    <td class="cell-center">${counter++}</td>
+                    <td class="cell-center" style="mso-number-format:'@';">${d.id}</td>
+                    <td class="cell-left">${cleanNama}</td>
+                    <td class="cell-center" style="mso-number-format:'@';">${d.telp || "-"}</td>
+                    <td class="cell-left">${cleanAlamat}</td>
+                    <td class="cell-left">${cleanLayanan}</td>
+                    <td class="cell-center">${formattedBooking}</td>
+                    <td class="cell-currency">${d.subtotal || d.total || 0}</td>
+                    <td class="cell-currency">${d.diskon || 0}</td>
+                    <td class="cell-currency">${d.total || 0}</td>
+                </tr> `;
+            });
+
+            excelTemplate += `
+                <tr style="height: 24px;">
+                    <td colspan="7" class="total-label">TOTAL ${monthName.toUpperCase()} : </td>
+                    <td class="total-currency">${monthlySubtotal}</td>
+                    <td class="total-currency">${monthlyDiskon}</td>
+                    <td class="total-currency">${monthlyTotal}</td>
+                </tr>
+                <tr><td colspan="10"></td></tr> `;
+        }
+
+        excelTemplate += `</table></body></html>`;
+
+        const blob = new Blob([excelTemplate], { type: "application/vnd.ms-excel;charset=utf-8;" });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = `Rekap_Omset_Adzkiya_Grouped_${Date.now()}.xls`;
+        a.click();
+        URL.revokeObjectURL(url);
+    }
+
+    function htmlEscapeSpecial(str) {
+        if(!str) return "";
+        return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#039;');
+    }
+</script>
+</body>
+</html>
