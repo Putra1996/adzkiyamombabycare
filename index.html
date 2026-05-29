@@ -667,7 +667,7 @@
 <script>
     let currentThemeHex = "#FF5A79";
     let isAdminMode = false;
-    let liveSyncIntervalId = null; // ID untuk mengontrol looping background sync
+    let liveSyncIntervalId = null; 
     
     const ADMIN_PASSWORD = "Adzkiya2025";
     const GOOGLE_APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwSecTZs0G4ILKBPXtXeI0SYpAl-VlhXHIahtz7lJ61Hp0AsAeCz1spLtrvttjraBtL-Q/exec";
@@ -811,7 +811,11 @@
                 btn.classList.add('admin-active');
                 btnKirim.style.display = "none";
                 
-                // AKTIFKAN AUTO REFRESH 10 DETIK SAAT LOGIN ADMIN (REAL-TIME CLOUD SYNC)
+                // Minta izin Push Notification ke HP/Laptop Admin
+                if ("Notification" in window && Notification.permission !== "granted") {
+                    Notification.requestPermission();
+                }
+                
                 fetchCloudDataSilently();
                 liveSyncIntervalId = setInterval(fetchCloudDataSilently, 10000); 
                 
@@ -829,7 +833,6 @@
             btnKirim.style.display = "block";
             document.getElementById('diskonHarga').value = "0";
             
-            // MATIKAN AUTO REFRESH JIKA KEMBALI JADI PASIEN
             if (liveSyncIntervalId) {
                 clearInterval(liveSyncIntervalId);
                 liveSyncIntervalId = null;
@@ -839,7 +842,7 @@
         }
     }
 
-    // FUNGSI SINKRONISASI DI LATAR BELAKANG UNTUK MENGAMBIL DATA RESERVASI DARI HP LAIN (PASIEN)
+    // REAL-TIME CLOUD FETCH: Mendeteksi masuknya data reservasi baru dari HP pasien
     function fetchCloudDataSilently() {
         if (!GOOGLE_APPS_SCRIPT_URL || !isAdminMode) return;
         let urlWithAction = GOOGLE_APPS_SCRIPT_URL + (GOOGLE_APPS_SCRIPT_URL.includes("?") ? "&" : "?") + "action=restore";
@@ -849,16 +852,55 @@
         .then(res => {
             let targetObj = res && res.data ? res.data : res;
             if (targetObj.reservations && Array.isArray(targetObj.reservations)) {
-                // Perbarui localStorage Admin dengan data real-time dari Cloud Sheets
+                let localReservations = JSON.parse(localStorage.getItem("adzkiya_reservation_data") || "[]");
+                
+                // Bandingkan ID data cloud dengan ID data lokal untuk mendeteksi data baru
+                targetObj.reservations.forEach(cloudItem => {
+                    let isExistLocally = localReservations.some(localItem => localItem.id === cloudItem.id);
+                    if (!isExistLocally) {
+                        // Jika ada data baru yang masuk dari perangkat lain, picu push notification ke status bar HP/Laptop Admin
+                        triggerStatusBarNotification(cloudItem);
+                    }
+                });
+
                 localStorage.setItem("adzkiya_reservation_data", JSON.stringify(targetObj.reservations));
-                loadReservationRecords(); // Refresh tampilan list antrean
+                loadReservationRecords(); 
             }
             if (targetObj.recap && Array.isArray(targetObj.recap)) {
                 localStorage.setItem("adzkiya_recap_data", JSON.stringify(targetObj.recap));
-                loadRecapRecords(); // Refresh tampilan list rekapan omset
+                loadRecapRecords(); 
             }
         })
         .catch(err => console.log("Real-time background fetch error:", err));
+    }
+
+    // FITUR UTAMA: Memunculkan notifikasi real-time di Status Bar HP / Banner System Laptop
+    function triggerStatusBarNotification(item) {
+        const formattedTime = item.waktuISO ? new Date(item.waktuISO).toLocaleString('id-ID', { dateStyle: 'short', timeStyle: 'short' }) : "-";
+        const notifTitle = "📩 Reservasi Baru Masuk!";
+        const notifBody = `Pasien: ${item.nama}\nJadwal: ${formattedTime}\nTreatment: ${item.layanan}`;
+        
+        // 1. Kirim ke Status Bar System (HP Android/iOS atau OS Laptop)
+        if ("Notification" in window && Notification.permission === "granted") {
+            new Notification(notifTitle, {
+                body: notifBody,
+                icon: base64LogoDataStream || "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%23FF5A79'><path d='M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15.5h-2v-2h2v2zm0-4.5h-2V7h2v6z'/></svg>",
+                tag: item.id, // Menghindari duplikasi notifikasi berulang
+                requireInteraction: true // Notifikasi tetap ada di bar sebelum di-swipe/klik
+            });
+        }
+        
+        // 2. Tampilkan cadangan Toast Notification di dalam UI Aplikasi
+        const toast = document.createElement('div');
+        toast.className = 'toast-notification';
+        toast.style.borderLeft = "5px solid #10b981";
+        toast.innerHTML = `
+            <button class="toast-close" onclick="this.parentElement.remove()">×</button>
+            <div class="toast-title" style="color:#10b981;">📩 RESERVASI BARU</div>
+            <div><b>${item.nama}</b> telah mengirim reservasi treatment <b>${item.layanan}</b> untuk tanggal <b>${formattedTime}</b>.</div>
+        `;
+        document.body.appendChild(toast);
+        setTimeout(() => { if(toast) toast.remove(); }, 15000);
     }
 
     function initializeAppCore() {
@@ -1003,7 +1045,6 @@
         }
     }
 
-    // MODIFIKASI FITUR REAL-TIME: DATA SEKALIGUS DIKIRIM KE GOOGLE SCRIPT UNTUK DATABASE GLOBAL
     function sendReservationRequest() {
         const nama = document.getElementById('namaPasien').value.trim();
         const telp = document.getElementById('nomorHp').value.trim();
@@ -1040,15 +1081,12 @@
             kelompokBulan: keyBulan
         };
 
-        // 1. Simpan di lokal perangkat pengirim
         let dataReservasi = localStorage.getItem("adzkiya_reservation_data");
         dataReservasi = dataReservasi ? JSON.parse(dataReservasi) : [];
         dataReservasi.unshift(reservasiBaru);
         localStorage.setItem("adzkiya_reservation_data", JSON.stringify(dataReservasi));
         
-        // 2. LOGIKA UTAMA: Kirim data langsung ke server cloud Google Script secara real-time
         if (GOOGLE_APPS_SCRIPT_URL) {
-            // Ambil semua paket data yang ada untuk diupload ulang ke cloud sehingga tersinkronisasi global
             const backupPackage = {
                 reservations: dataReservasi,
                 recap: JSON.parse(localStorage.getItem("adzkiya_recap_data") || "[]"),
@@ -1222,7 +1260,6 @@
         localStorage.setItem("adzkiya_reservation_data", JSON.stringify(dataReservasi));
         document.getElementById('adzkiyaReservationEditModalElement').remove();
         
-        // Push perubahan admin ke cloud sheets
         syncLocalStateToCloudSilently();
         alert("✓ Kwitansi Antrean Reservasi berhasil diperbarui!");
         loadReservationRecords();
@@ -1252,7 +1289,6 @@
         dataRekap.unshift(approvedItem);
         localStorage.setItem("adzkiya_recap_data", JSON.stringify(dataRekap));
         
-        // Dorong update ke cloud
         syncLocalStateToCloudSilently();
         
         alert("✓ Reservasi disetujui dan BERHASIL dimasukkan ke Rekapan Utama!");
