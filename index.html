@@ -669,7 +669,7 @@
     let isAdminMode = false;
     
     const ADMIN_PASSWORD = "Adzkiya2025";
-    const GOOGLE_APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbylnnFsU475r9NJHN-JzkYry54K-JhKAzshRVc2u-2SC8uL2JRVO-sKuszdugAP-KUpVw/exec";
+    const GOOGLE_APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwSecTZs0G4ILKBPXtXeI0SYpAl-VlhXHIahtz7lJ61Hp0AsAeCz1spLtrvttjraBtL-Q/exec";
 
     const medicalServicesDataset = {
         "IBU": [
@@ -1008,6 +1008,16 @@
         dataReservasi = dataReservasi ? JSON.parse(dataReservasi) : [];
         dataReservasi.unshift(reservasiBaru);
         localStorage.setItem("adzkiya_reservation_data", JSON.stringify(dataReservasi));
+        
+        // --- SINKRONISASI DATABASE ONLINE SECARA REAL-TIME ---
+        if (GOOGLE_APPS_SCRIPT_URL) {
+            fetch(GOOGLE_APPS_SCRIPT_URL, {
+                method: "POST",
+                mode: "no-cors",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ action: "live_reservation", data: reservasiBaru })
+            }).catch(err => console.log("Gagal sinkronisasi background ke cloud:", err));
+        }
         
         alert("✨ Reservasi Anda berhasil dikirim! Silakan hubungi Admin untuk persetujuan (ACC).");
         resetFormInputs();
