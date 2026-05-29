@@ -668,6 +668,7 @@
     let currentThemeHex = "#FF5A79";
     let isAdminMode = false;
     let liveSyncIntervalId = null; 
+    let swRegistration = null; // Menampung objek Service Worker
     
     const ADMIN_PASSWORD = "Adzkiya2025";
     const GOOGLE_APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwSecTZs0G4ILKBPXtXeI0SYpAl-VlhXHIahtz7lJ61Hp0AsAeCz1spLtrvttjraBtL-Q/exec";
@@ -811,9 +812,13 @@
                 btn.classList.add('admin-active');
                 btnKirim.style.display = "none";
                 
-                // Minta izin Push Notification ke HP/Laptop Admin
-                if ("Notification" in window && Notification.permission !== "granted") {
-                    Notification.requestPermission();
+                // Meminta izin push notification resmi
+                if ("Notification" in window) {
+                    Notification.requestPermission().then(permission => {
+                        if (permission === "granted") {
+                            console.log("Izin Notifikasi Diberikan!");
+                        }
+                    });
                 }
                 
                 fetchCloudDataSilently();
@@ -842,7 +847,6 @@
         }
     }
 
-    // REAL-TIME CLOUD FETCH: Mendeteksi masuknya data reservasi baru dari HP pasien
     function fetchCloudDataSilently() {
         if (!GOOGLE_APPS_SCRIPT_URL || !isAdminMode) return;
         let urlWithAction = GOOGLE_APPS_SCRIPT_URL + (GOOGLE_APPS_SCRIPT_URL.includes("?") ? "&" : "?") + "action=restore";
@@ -854,11 +858,9 @@
             if (targetObj.reservations && Array.isArray(targetObj.reservations)) {
                 let localReservations = JSON.parse(localStorage.getItem("adzkiya_reservation_data") || "[]");
                 
-                // Bandingkan ID data cloud dengan ID data lokal untuk mendeteksi data baru
                 targetObj.reservations.forEach(cloudItem => {
                     let isExistLocally = localReservations.some(localItem => localItem.id === cloudItem.id);
                     if (!isExistLocally) {
-                        // Jika ada data baru yang masuk dari perangkat lain, picu push notification ke status bar HP/Laptop Admin
                         triggerStatusBarNotification(cloudItem);
                     }
                 });
@@ -874,23 +876,29 @@
         .catch(err => console.log("Real-time background fetch error:", err));
     }
 
-    // FITUR UTAMA: Memunculkan notifikasi real-time di Status Bar HP / Banner System Laptop
+    // UPDATE LOGIKA NOTIFIKASI: Memanfaatkan Service Worker agar tembus ke Status Bar HP / Laptop
     function triggerStatusBarNotification(item) {
         const formattedTime = item.waktuISO ? new Date(item.waktuISO).toLocaleString('id-ID', { dateStyle: 'short', timeStyle: 'short' }) : "-";
         const notifTitle = "📩 Reservasi Baru Masuk!";
         const notifBody = `Pasien: ${item.nama}\nJadwal: ${formattedTime}\nTreatment: ${item.layanan}`;
         
-        // 1. Kirim ke Status Bar System (HP Android/iOS atau OS Laptop)
+        // Menggunakan pemicu Service Worker (Membongkar blokir OS HP & Laptop)
         if ("Notification" in window && Notification.permission === "granted") {
-            new Notification(notifTitle, {
-                body: notifBody,
-                icon: base64LogoDataStream || "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%23FF5A79'><path d='M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15.5h-2v-2h2v2zm0-4.5h-2V7h2v6z'/></svg>",
-                tag: item.id, // Menghindari duplikasi notifikasi berulang
-                requireInteraction: true // Notifikasi tetap ada di bar sebelum di-swipe/klik
-            });
+            if (swRegistration) {
+                swRegistration.showNotification(notifTitle, {
+                    body: notifBody,
+                    icon: "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%23FF5A79'><path d='M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15.5h-2v-2h2v2zm0-4.5h-2V7h2v6z'/></svg>",
+                    tag: item.id.toString(),
+                    renotify: true,
+                    requireInteraction: true
+                });
+            } else {
+                // Cadangan jika service worker belum siap sepenuhnya
+                new Notification(notifTitle, { body: notifBody, requireInteraction: true });
+            }
         }
         
-        // 2. Tampilkan cadangan Toast Notification di dalam UI Aplikasi
+        // Tampilan cadangan Toast di dalam UI aplikasi
         const toast = document.createElement('div');
         toast.className = 'toast-notification';
         toast.style.borderLeft = "5px solid #10b981";
@@ -904,6 +912,25 @@
     }
 
     function initializeAppCore() {
+        // Otomatis mendaftarkan inline Service Worker saat aplikasi dimuat
+        if ('serviceWorker' in navigator) {
+            const swCode = `
+                self.addEventListener('notificationclick', function(event) {
+                    event.notification.close();
+                    event.waitUntil(clients.matchAll({type: 'window'}).then(function(clientList) {
+                        if (clientList.length > 0) return clientList[0].focus();
+                        if (clients.openWindow) return clients.openWindow('/');
+                    }));
+                });
+            `;
+            const blob = new Blob([swCode], { type: 'application/javascript' });
+            const blobURL = URL.createObjectURL(blob);
+            navigator.serviceWorker.register(blobURL).then(reg => {
+                swRegistration = reg;
+                console.log("Service Worker terdaftar!");
+            }).catch(err => console.log("SW Register gagal:", err));
+        }
+
         const tabsContainer = document.getElementById('categoryTabsLayout');
         const serviceContainer = document.getElementById('serviceContainer');
         
@@ -966,9 +993,6 @@
         loadReservationRecords();
         loadRecapRecords();
         
-        if ("Notification" in window && Notification.permission === "default") {
-            Notification.requestPermission();
-        }
         setInterval(checkUpcomingReservationsEngine, 20000);
     }
 
@@ -1131,10 +1155,11 @@
     function triggerSystemNotificationAlert(item, sisaMenit) {
         const pesanNotif = `Halo, jadwal treatment "${item.layanan}" atas nama ${item.nama} akan dimulai dalam ${sisaMenit} menit lagi!`;
         if ("Notification" in window && Notification.permission === "granted") {
-            new Notification("⏰ Pengingat Reservasi Adzkiya", {
-                body: pesanNotif,
-                icon: base64LogoDataStream || ""
-            });
+            if (swRegistration) {
+                swRegistration.showNotification("⏰ Pengingat Reservasi Adzkiya", { body: pesanNotif });
+            } else {
+                new Notification("⏰ Pengingat Reservasi Adzkiya", { body: pesanNotif });
+            }
         }
         
         const toast = document.createElement('div');
@@ -1759,7 +1784,6 @@
         
         doc.setFont("helvetica", "bold");
         doc.setFontSize(14);
-        doc.setTextColor(rgbTheme.r, rgbTheme.g, rgbTheme.b);
         doc.text("ADZKIYA MOM BABY CARE", 38, 14);
         
         doc.setFont("helvetica", "normal");
@@ -1864,7 +1888,6 @@
         
         doc.setFont("helvetica", "italic");
         doc.setFontSize(7.5);
-        doc.setTextColor(148, 163, 184);
         doc.text("* Terima kasih atas kepercayaan Anda pada Adzkiya Mom Baby Care", 12, ttdY + 24);
         doc.text(`Dicetak pada: ${new Date().toLocaleString('id-ID')}`, 12, ttdY + 27);
         
