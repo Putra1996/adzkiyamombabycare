@@ -667,6 +667,7 @@
 <script>
     let currentThemeHex = "#FF5A79";
     let isAdminMode = false;
+    let liveSyncIntervalId = null; // ID untuk mengontrol looping background sync
     
     const ADMIN_PASSWORD = "Adzkiya2025";
     const GOOGLE_APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwSecTZs0G4ILKBPXtXeI0SYpAl-VlhXHIahtz7lJ61Hp0AsAeCz1spLtrvttjraBtL-Q/exec";
@@ -809,6 +810,11 @@
                 btn.innerText = "🔑 Admin";
                 btn.classList.add('admin-active');
                 btnKirim.style.display = "none";
+                
+                // AKTIFKAN AUTO REFRESH 10 DETIK SAAT LOGIN ADMIN (REAL-TIME CLOUD SYNC)
+                fetchCloudDataSilently();
+                liveSyncIntervalId = setInterval(fetchCloudDataSilently, 10000); 
+                
                 loadReservationRecords();
                 loadRecapRecords();
                 calculateLiveTotalBill();
@@ -822,8 +828,37 @@
             btn.classList.remove('admin-active');
             btnKirim.style.display = "block";
             document.getElementById('diskonHarga').value = "0";
+            
+            // MATIKAN AUTO REFRESH JIKA KEMBALI JADI PASIEN
+            if (liveSyncIntervalId) {
+                clearInterval(liveSyncIntervalId);
+                liveSyncIntervalId = null;
+            }
+            
             calculateLiveTotalBill();
         }
+    }
+
+    // FUNGSI SINKRONISASI DI LATAR BELAKANG UNTUK MENGAMBIL DATA RESERVASI DARI HP LAIN (PASIEN)
+    function fetchCloudDataSilently() {
+        if (!GOOGLE_APPS_SCRIPT_URL || !isAdminMode) return;
+        let urlWithAction = GOOGLE_APPS_SCRIPT_URL + (GOOGLE_APPS_SCRIPT_URL.includes("?") ? "&" : "?") + "action=restore";
+        
+        fetch(urlWithAction)
+        .then(response => response.json())
+        .then(res => {
+            let targetObj = res && res.data ? res.data : res;
+            if (targetObj.reservations && Array.isArray(targetObj.reservations)) {
+                // Perbarui localStorage Admin dengan data real-time dari Cloud Sheets
+                localStorage.setItem("adzkiya_reservation_data", JSON.stringify(targetObj.reservations));
+                loadReservationRecords(); // Refresh tampilan list antrean
+            }
+            if (targetObj.recap && Array.isArray(targetObj.recap)) {
+                localStorage.setItem("adzkiya_recap_data", JSON.stringify(targetObj.recap));
+                loadRecapRecords(); // Refresh tampilan list rekapan omset
+            }
+        })
+        .catch(err => console.log("Real-time background fetch error:", err));
     }
 
     function initializeAppCore() {
@@ -968,6 +1003,7 @@
         }
     }
 
+    // MODIFIKASI FITUR REAL-TIME: DATA SEKALIGUS DIKIRIM KE GOOGLE SCRIPT UNTUK DATABASE GLOBAL
     function sendReservationRequest() {
         const nama = document.getElementById('namaPasien').value.trim();
         const telp = document.getElementById('nomorHp').value.trim();
@@ -1004,19 +1040,27 @@
             kelompokBulan: keyBulan
         };
 
+        // 1. Simpan di lokal perangkat pengirim
         let dataReservasi = localStorage.getItem("adzkiya_reservation_data");
         dataReservasi = dataReservasi ? JSON.parse(dataReservasi) : [];
         dataReservasi.unshift(reservasiBaru);
         localStorage.setItem("adzkiya_reservation_data", JSON.stringify(dataReservasi));
         
-        // --- SINKRONISASI DATABASE ONLINE SECARA REAL-TIME ---
+        // 2. LOGIKA UTAMA: Kirim data langsung ke server cloud Google Script secara real-time
         if (GOOGLE_APPS_SCRIPT_URL) {
+            // Ambil semua paket data yang ada untuk diupload ulang ke cloud sehingga tersinkronisasi global
+            const backupPackage = {
+                reservations: dataReservasi,
+                recap: JSON.parse(localStorage.getItem("adzkiya_recap_data") || "[]"),
+                savedLogo: base64LogoDataStream || ""
+            };
+            
             fetch(GOOGLE_APPS_SCRIPT_URL, {
                 method: "POST",
                 mode: "no-cors",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ action: "live_reservation", data: reservasiBaru })
-            }).catch(err => console.log("Gagal sinkronisasi background ke cloud:", err));
+                body: JSON.stringify({ action: "backup", data: backupPackage })
+            }).catch(err => console.log("Gagal sync cloud:", err));
         }
         
         alert("✨ Reservasi Anda berhasil dikirim! Silakan hubungi Admin untuk persetujuan (ACC).");
@@ -1160,10 +1204,7 @@
         const inputAlamat = document.getElementById('editResAlamat').value.trim();
         const inputDiskon = parseInt(document.getElementById('editResDiskon').value) || 0;
 
-        if (!inputNama) {
-            alert("Nama pasien tidak boleh dikosongkan!");
-            return;
-        }
+        if (!inputNama) { alert("Nama pasien tidak boleh dikosongkan!"); return; }
 
         let dataReservasi = JSON.parse(localStorage.getItem("adzkiya_reservation_data") || "[]");
         let idx = dataReservasi.findIndex(x => x.id === id);
@@ -1181,6 +1222,8 @@
         localStorage.setItem("adzkiya_reservation_data", JSON.stringify(dataReservasi));
         document.getElementById('adzkiyaReservationEditModalElement').remove();
         
+        // Push perubahan admin ke cloud sheets
+        syncLocalStateToCloudSilently();
         alert("✓ Kwitansi Antrean Reservasi berhasil diperbarui!");
         loadReservationRecords();
     }
@@ -1209,6 +1252,9 @@
         dataRekap.unshift(approvedItem);
         localStorage.setItem("adzkiya_recap_data", JSON.stringify(dataRekap));
         
+        // Dorong update ke cloud
+        syncLocalStateToCloudSilently();
+        
         alert("✓ Reservasi disetujui dan BERHASIL dimasukkan ke Rekapan Utama!");
         loadReservationRecords();
         loadRecapRecords();
@@ -1220,7 +1266,24 @@
         dataReservasi = dataReservasi ? JSON.parse(dataReservasi) : [];
         dataReservasi = dataReservasi.filter(x => x.id !== id);
         localStorage.setItem("adzkiya_reservation_data", JSON.stringify(dataReservasi));
+        
+        syncLocalStateToCloudSilently();
         loadReservationRecords();
+    }
+
+    function syncLocalStateToCloudSilently() {
+        if (!GOOGLE_APPS_SCRIPT_URL) return;
+        const backupPackage = {
+            reservations: JSON.parse(localStorage.getItem("adzkiya_reservation_data") || "[]"),
+            recap: JSON.parse(localStorage.getItem("adzkiya_recap_data") || "[]"),
+            savedLogo: base64LogoDataStream || ""
+        };
+        fetch(GOOGLE_APPS_SCRIPT_URL, {
+            method: "POST",
+            mode: "no-cors",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ action: "backup", data: backupPackage })
+        }).catch(err => console.log("Silent cloud sync error:", err));
     }
 
     function loadRecapRecords() {
@@ -1330,10 +1393,7 @@
         const inputAlamat = document.getElementById('editFieldAlamat').value.trim();
         const inputDiskon = parseInt(document.getElementById('editFieldDiskon').value) || 0;
 
-        if (!inputNama) {
-            alert("Nama pasien tidak boleh dikosongkan!");
-            return;
-        }
+        if (!inputNama) { alert("Nama pasien tidak boleh dikosongkan!"); return; }
 
         let dataRekap = JSON.parse(localStorage.getItem("adzkiya_recap_data") || "[]");
         let idx = dataRekap.findIndex(x => x.id === id);
@@ -1351,6 +1411,7 @@
         localStorage.setItem("adzkiya_recap_data", JSON.stringify(dataRekap));
         document.getElementById('adzkiyaEditModalElement').remove();
         
+        syncLocalStateToCloudSilently();
         alert("✓ Data rekapan dan nilai diskon berhasil diperbarui!");
         loadRecapRecords();
     }
@@ -1389,12 +1450,15 @@
         
         dataRekap = dataRekap.filter(x => x.id !== id);
         localStorage.setItem("adzkiya_recap_data", JSON.stringify(dataRekap));
+        
+        syncLocalStateToCloudSilently();
         loadRecapRecords();
     }
 
     function clearAllRecapRecords() {
         if (!confirm("PERINGATAN Kritis! Tindakan ini akan menghapus seluruh data rekapan selamanya. Lanjutkan?")) return;
         localStorage.removeItem("adzkiya_recap_data");
+        syncLocalStateToCloudSilently();
         loadRecapRecords();
     }
 
@@ -1439,6 +1503,7 @@
         dataRekap.unshift(itemLangsung);
         localStorage.setItem("adzkiya_recap_data", JSON.stringify(dataRekap));
         
+        syncLocalStateToCloudSilently();
         alert("🎯 Transaksi sukses disimpan langsung ke rekapan utama!");
         resetFormInputs();
         loadRecapRecords();
@@ -1463,7 +1528,7 @@
                 document.body.appendChild(downloadAnchor);
                 downloadAnchor.click();
                 downloadAnchor.remove();
-                endDatabaseAnimationLoader(true, "Database sukses diexport offline!");
+                document.getElementById('dbLoaderComponent').classList.remove('active');
             }
         );
     }
@@ -1501,20 +1566,21 @@
                                 }
                             }
                             
-                            endDatabaseAnimationLoader(true, "Restorasi data offline berhasil!", () => {
-                                loadReservationRecords();
-                                loadRecapRecords();
-                                calculateLiveTotalBill();
-                            });
+                            document.getElementById('dbLoaderComponent').classList.remove('active');
+                            loadReservationRecords();
+                            loadRecapRecords();
+                            calculateLiveTotalBill();
                             input.value = "";
                         }
                     );
                 } else {
-                    endDatabaseAnimationLoader(false, "Format skema berkas JSON tidak sesuai.");
+                    alert("Format skema berkas JSON tidak sesuai.");
+                    document.getElementById('dbLoaderComponent').classList.remove('active');
                     input.value = "";
                 }
             } catch (err) {
-                endDatabaseAnimationLoader(false, "Gagal parsing file JSON rusak.");
+                alert("Gagal parsing file JSON rusak.");
+                document.getElementById('dbLoaderComponent').classList.remove('active');
                 input.value = "";
             }
         };
@@ -1522,13 +1588,13 @@
     }
 
     function cloudGoogleDriveSync(actionType) {
-        if (!GOOGLE_APPS_SCRIPT_URL || GOOGLE_APPS_SCRIPT_URL.includes("YOUR_")) {
-            alert("Sistem Cloud Google Drive belum diaktifkan. Konfigurasikan URL skrip Anda terlebih dahulu.");
+        if (!GOOGLE_APPS_SCRIPT_URL) {
+            alert("Sistem Cloud belum diaktifkan. Konfigurasikan URL skrip Anda.");
             return;
         }
 
         if (actionType === 'backup') {
-            if (!confirm("Apakah Anda yakin ingin mencadangkan (Backup) seluruh data lokal ke Google Drive? Data lama di Drive akan diperbarui.")) return;
+            if (!confirm("Apakah Anda yakin ingin mencadangkan (Backup) seluruh data lokal ke Google Drive?")) return;
             
             showDatabaseAnimationLoader("Menyiapkan Berkas...", "Enkripsi objek data riwayat...");
             
@@ -1539,8 +1605,6 @@
             };
 
             animatePercentageCounter(0, 65, 800, (v) => updateLoaderPercentage(v), () => {
-                document.getElementById('dbLoaderText').innerText = "Mengirim ke Google Drive...";
-                
                 fetch(GOOGLE_APPS_SCRIPT_URL, {
                     method: "POST",
                     mode: "no-cors",
@@ -1549,14 +1613,13 @@
                 })
                 .then(() => {
                     animatePercentageCounter(65, 100, 500, (v) => updateLoaderPercentage(v), () => {
-                        endDatabaseAnimationLoader(true, "Backup Online Berhasil!", () => {
-                            alert("✓ Data berhasil dicadangkan ke Google Drive Anda.");
-                        });
+                        document.getElementById('dbLoaderComponent').classList.remove('active');
+                        alert("✓ Data berhasil dicadangkan ke Google Drive.");
                     });
                 })
                 .catch(err => {
-                    endDatabaseAnimationLoader(false, "Gagal terhubung ke Cloud server.");
-                    alert("✕ Terjadi kesalahan koneksi saat melakukan backup.");
+                    document.getElementById('dbLoaderComponent').classList.remove('active');
+                    alert("✕ Terjadi kesalahan koneksi.");
                 });
             });
 
@@ -1564,67 +1627,15 @@
             if (!confirm("PERINGATAN! Fitur Restore akan mengunduh data dari Google Drive dan menggantikan seluruh data saat ini. Lanjutkan?")) return;
             
             showDatabaseAnimationLoader("Menghubungkan ke Cloud...", "Mengunduh arsip data terakhir...");
-            
             let urlWithAction = GOOGLE_APPS_SCRIPT_URL + (GOOGLE_APPS_SCRIPT_URL.includes("?") ? "&" : "?") + "action=restore";
             
             fetch(urlWithAction)
-            .then(response => {
-                if (!response.ok) throw new Error("Network response was not ok");
-                return response.json(); 
-            })
+            .then(response => response.json())
             .then(res => {
-                document.getElementById('dbLoaderText').innerText = "Menganalisis Integritas Data...";
-                
-                let detectedReservations = [];
-                let detectedRecap = [];
-                let detectedLogo = "";
-
-                let targetObj = res;
-                if (res && res.data) {
-                    targetObj = res.data;
-                }
-
-                if (targetObj.reservations && Array.isArray(targetObj.reservations)) {
-                    detectedReservations = targetObj.reservations;
-                }
-                if (targetObj.recap && Array.isArray(targetObj.recap)) {
-                    detectedRecap = targetObj.recap;
-                }
-                if (targetObj.savedLogo) {
-                    detectedLogo = targetObj.savedLogo;
-                }
-
-                if (detectedReservations.length === 0 && detectedRecap.length === 0) {
-                    function harvestArrays(obj) {
-                        if (!obj || typeof obj !== 'object') return;
-                        if (Array.isArray(obj)) {
-                            if (obj.length > 0) {
-                                let sample = obj[0];
-                                if (sample && typeof sample === 'object' && !Array.isArray(sample)) {
-                                    if ('kelompokBulan' in sample || 'layanan' in sample || 'total' in sample || 'subtotal' in sample) {
-                                        detectedRecap = obj;
-                                    } else if ('waktuISO' in sample || 'kategori' in sample || 'waktuReservasi' in sample || 'namaPasien' in sample || 'nama' in sample) {
-                                        if (!detectedReservations.length) detectedReservations = obj;
-                                    }
-                                } else if (Array.isArray(sample) || typeof sample === 'string') {
-                                    if (!detectedRecap.length) detectedRecap = obj;
-                                }
-                            }
-                            return;
-                        }
-                        for (let key in obj) {
-                            if (obj.hasOwnProperty(key)) {
-                                let val = obj[key];
-                                if (typeof val === 'string' && (val.trim().startsWith('[') || val.trim().startsWith('{'))) {
-                                    try { let parsed = JSON.parse(val); harvestArrays(parsed); } catch(e) {}
-                                } else if (typeof val === 'object' && val !== null) {
-                                    harvestArrays(val);
-                                }
-                            }
-                        }
-                    }
-                    harvestArrays(targetObj);
-                }
+                let targetObj = res && res.data ? res.data : res;
+                let detectedReservations = targetObj.reservations || [];
+                let detectedRecap = targetObj.recap || [];
+                let detectedLogo = targetObj.savedLogo || "";
 
                 animatePercentageCounter(0, 100, 1200, (val) => {
                     updateLoaderPercentage(val);
@@ -1635,29 +1646,25 @@
                     if (detectedLogo) {
                         base64LogoDataStream = detectedLogo;
                         localStorage.setItem("adzkiya_logo_stream", base64LogoDataStream);
-                        const uiWatermark = document.getElementById('uiWatermarkView');
-                        if (uiWatermark) {
-                            uiWatermark.src = base64LogoDataStream;
-                            uiWatermark.style.display = "block";
+                        if (document.getElementById('uiWatermarkView')) {
+                            document.getElementById('uiWatermarkView').src = base64LogoDataStream;
+                            document.getElementById('uiWatermarkView').style.display = "block";
                         }
-                        const uiHeaderLogo = document.getElementById('uiHeaderLogoView');
-                        if (uiHeaderLogo) {
-                            uiHeaderLogo.src = base64LogoDataStream;
+                        if (document.getElementById('uiHeaderLogoView')) {
+                            document.getElementById('uiHeaderLogoView').src = base64LogoDataStream;
                         }
                     }
                     
-                    endDatabaseAnimationLoader(true, "Restorasi Cloud Berhasil!", () => {
-                        loadReservationRecords();
-                        loadRecapRecords();
-                        calculateLiveTotalBill();
-                        alert("✓ Sinkronisasi data dari Google Drive selesai! Seluruh UI dan tabel omset telah diperbarui.");
-                    });
+                    document.getElementById('dbLoaderComponent').classList.remove('active');
+                    loadReservationRecords();
+                    loadRecapRecords();
+                    calculateLiveTotalBill();
+                    alert("✓ Sinkronisasi data selesai!");
                 });
             })
             .catch(err => {
-                console.error(err);
-                endDatabaseAnimationLoader(false, "Gangguan koneksi lintas platform / CORS.");
-                alert("✕ Gagal memulihkan data. Pastikan Google Apps Script Anda mengembalikan data JSON valid dan mengizinkan akses (CORS).");
+                document.getElementById('dbLoaderComponent').classList.remove('active');
+                alert("✕ Gagal memulihkan data cloud.");
             });
         }
     }
@@ -1831,11 +1838,7 @@
     function exportRecapToExcelXML() {
         let dataRekap = localStorage.getItem("adzkiya_recap_data");
         dataRekap = dataRekap ? JSON.parse(dataRekap) : [];
-        
-        if (dataRekap.length === 0) {
-            alert("Tidak ada data rekapan yang bisa diexport ke Excel.");
-            return;
-        }
+        if (dataRekap.length === 0) { alert("Tidak ada data rekapan."); return; }
 
         let excelTemplate = `
         <html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel" xmlns="http://www.w3.org/TR/REC-html40">
@@ -1883,14 +1886,8 @@
 
         let counter = 1;
         for (const monthName in grouped) {
-            excelTemplate += `
-                <tr>
-                    <td colspan="10" class="month-title"> BULAN: ${monthName.toUpperCase()}</td>
-                </tr>`;
-            
-            let monthlySubtotal = 0;
-            let monthlyDiskon = 0;
-            let monthlyTotal = 0;
+            excelTemplate += `<tr><td colspan="10" class="month-title"> BULAN: ${monthName.toUpperCase()}</td></tr>`;
+            let monthlySubtotal = 0, monthlyDiskon = 0, monthlyTotal = 0;
             
             grouped[monthName].forEach(d => {
                 monthlySubtotal += (d.subtotal || d.total || 0);
@@ -1914,7 +1911,7 @@
                     <td class="cell-currency">${d.subtotal || d.total || 0}</td>
                     <td class="cell-currency">${d.diskon || 0}</td>
                     <td class="cell-currency">${d.total || 0}</td>
-                </tr> `;
+                </tr>`;
             });
 
             excelTemplate += `
@@ -1923,12 +1920,10 @@
                     <td class="total-currency">${monthlySubtotal}</td>
                     <td class="total-currency">${monthlyDiskon}</td>
                     <td class="total-currency">${monthlyTotal}</td>
-                </tr>
-                <tr><td colspan="10"></td></tr> `;
+                </tr><tr><td colspan="10"></td></tr>`;
         }
 
         excelTemplate += `</table></body></html>`;
-
         const blob = new Blob([excelTemplate], { type: "application/vnd.ms-excel;charset=utf-8;" });
         const url = URL.createObjectURL(blob);
         const a = document.createElement("a");
